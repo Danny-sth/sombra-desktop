@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <circle cx="256" cy="256" r="250" fill="#1a1a2e"/>
+  <circle cx="256" cy="256" r="245" fill="none" stroke="#333355" stroke-width="3"/>
+
+  <!-- Microphone body -->
+  <ellipse cx="256" cy="230" rx="50" ry="75" fill="#e94560"/>
+
+  <!-- Microphone stand -->
+  <rect x="246" y="305" width="20" height="45" fill="#e94560"/>
+  <ellipse cx="256" cy="360" rx="50" ry="10" fill="#e94560"/>
+
+  <!-- Sound waves left -->
+  <path d="M150 190 Q115 256 150 322" fill="none" stroke="#e94560" stroke-width="14" stroke-linecap="round"/>
+  <path d="M105 150 Q55 256 105 362" fill="none" stroke="#e94560" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Sound waves right -->
+  <path d="M362 190 Q397 256 362 322" fill="none" stroke="#e94560" stroke-width="14" stroke-linecap="round"/>
+  <path d="M407 150 Q457 256 407 362" fill="none" stroke="#e94560" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- AI indicator -->
+  <circle cx="256" cy="210" r="12" fill="#4ecca3"/>
+</svg>

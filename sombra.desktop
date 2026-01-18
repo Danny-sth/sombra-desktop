@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Sombra Desktop
+GenericName=Voice AI Assistant
+Comment=Voice-enabled AI assistant for Sombra
+Exec=sombra-desktop
+Icon=sombra
+Terminal=false
+Categories=Utility;Audio;Network;
+Keywords=voice;assistant;ai;sombra;
+StartupNotify=true
+StartupWMClass=sombra
