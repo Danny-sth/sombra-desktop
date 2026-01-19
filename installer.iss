@@ -2,7 +2,7 @@
 ; Download Inno Setup: https://jrsoftware.org/isdl.php
 
 #define MyAppName "Sombra"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.1"
 #define MyAppPublisher "Sombra"
 #define MyAppURL "https://github.com/Danny-sth/sombra-desktop"
 #define MyAppExeName "Sombra.exe"
@@ -56,14 +56,17 @@ Name: "startupicon"; Description: "Start Sombra with Windows"; GroupDescription:
 ; Main application files
 Source: "dist\Sombra\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+; Icon for shortcuts
+Source: "resources\icons\sombra.ico"; DestDir: "{app}"; Flags: ignoreversion
+
 ; Config template
 Source: ".env.example"; DestDir: "{app}"; DestName: ".env.example"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\sombra.ico"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: startupicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\sombra.ico"; Tasks: desktopicon
+Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\sombra.ico"; Tasks: startupicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
