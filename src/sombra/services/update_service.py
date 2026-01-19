@@ -35,6 +35,7 @@ class UpdateChecker(QThread):
     def run(self):
         """Check GitHub for latest release."""
         try:
+            logger.info(f"Checking for updates... current={self.current_version}")
             with httpx.Client(timeout=10) as client:
                 response = client.get(GITHUB_API, headers={
                     "Accept": "application/vnd.github.v3+json"
@@ -43,6 +44,7 @@ class UpdateChecker(QThread):
                 data = response.json()
 
             tag = data.get("tag_name", "").lstrip("v")
+            logger.info(f"Latest version on GitHub: {tag}")
             if not tag:
                 self.check_complete.emit(False)
                 return
@@ -52,12 +54,15 @@ class UpdateChecker(QThread):
             latest = version.parse(tag)
 
             if latest > current:
+                logger.info(f"Update available: {current} -> {latest}")
                 # Find portable zip asset
                 download_url = None
                 for asset in data.get("assets", []):
                     name = asset.get("name", "")
+                    logger.debug(f"Asset: {name}")
                     if "Portable" in name and name.endswith(".zip"):
                         download_url = asset.get("browser_download_url")
+                        logger.info(f"Found portable zip: {name}")
                         break
 
                 if download_url:
@@ -68,7 +73,7 @@ class UpdateChecker(QThread):
                     logger.warning("No portable zip found in release assets")
                     self.check_complete.emit(False)
             else:
-                logger.info(f"Already on latest version: {self.current_version}")
+                logger.info(f"Already on latest version: {self.current_version} >= {tag}")
                 self.check_complete.emit(False)
 
         except Exception as e:
@@ -170,6 +175,7 @@ class UpdateService(QObject):
         if self._downloader and self._downloader.isRunning():
             return
 
+        logger.info(f"Starting download: {self._download_url}")
         self._downloader = UpdateDownloader(self._download_url)
         self._downloader.progress.connect(self.download_progress.emit)
         self._downloader.download_complete.connect(self._on_download_complete)
@@ -188,7 +194,10 @@ class UpdateService(QObject):
         Returns:
             True if update process started, False otherwise.
         """
+        logger.info(f"Applying update from: {self._update_path}")
+
         if not self._update_path or not os.path.exists(self._update_path):
+            logger.error("Update file not found")
             self.error.emit("Update file not found")
             return False
 
