@@ -91,14 +91,10 @@ class MainWindow(FluentWindow):
     def _setup_window(self) -> None:
         """Configure window properties."""
         self.setWindowTitle("Sombra Desktop")
-        self.resize(1000, 700)
         self.setMinimumSize(800, 600)
 
-        # Center on screen
-        screen = QApplication.primaryScreen().geometry()
-        x = (screen.width() - self.width()) // 2
-        y = (screen.height() - self.height()) // 2
-        self.move(x, y)
+        # Start maximized
+        self.showMaximized()
 
     def _setup_theme(self) -> None:
         """Configure theme and colors."""
