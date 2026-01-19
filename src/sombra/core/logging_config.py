@@ -1,6 +1,7 @@
 """Centralized logging configuration with remote streaming."""
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -8,7 +9,6 @@ import platform
 import queue
 import sys
 import threading
-import uuid
 from datetime import datetime
 from logging.handlers import RotatingFileHandler, QueueHandler, QueueListener
 from pathlib import Path
@@ -19,8 +19,20 @@ from websockets.exceptions import WebSocketException
 
 from .. import __version__
 
-# Generate unique client ID
-CLIENT_ID = f"desktop-{platform.node()}-{uuid.uuid4().hex[:8]}"
+
+def _get_stable_client_id() -> str:
+    """Generate stable client ID based on machine identifiers."""
+    hostname = platform.node()
+    system = platform.system().lower()[:3]  # win, lin, dar
+
+    # Create a stable hash from username + hostname
+    user = os.environ.get("USER") or os.environ.get("USERNAME") or "unknown"
+    stable_part = hashlib.md5(f"{user}@{hostname}".encode()).hexdigest()[:6]
+
+    return f"{system}-{hostname}-{stable_part}"
+
+
+CLIENT_ID = _get_stable_client_id()
 
 
 def get_log_dir() -> Path:

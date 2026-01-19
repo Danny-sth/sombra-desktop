@@ -2,7 +2,7 @@
 ; Download Inno Setup: https://jrsoftware.org/isdl.php
 
 #define MyAppName "Sombra"
-#define MyAppVersion "0.2.11"
+#define MyAppVersion "0.2.12"
 #define MyAppPublisher "Sombra"
 #define MyAppURL "https://github.com/Danny-sth/sombra-desktop"
 #define MyAppExeName "Sombra.exe"
