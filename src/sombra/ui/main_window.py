@@ -22,6 +22,7 @@ from .pages.chat_page import ChatPage
 from .pages.agents_page import AgentsPage
 from .pages.tasks_page import TasksPage
 from .pages.logs_page import LogsPage
+from .pages.devices_page import DevicesPage
 from .pages.settings_page import SettingsPage
 
 from ..core.async_bridge import get_async_bridge
@@ -120,6 +121,10 @@ class MainWindow(FluentWindow):
         self.logs_page = LogsPage(self._sombra_service, self)
         self.logs_page.setObjectName("logsPage")
 
+        # Devices
+        self.devices_page = DevicesPage(self)
+        self.devices_page.setObjectName("devicesPage")
+
         # Settings
         self.settings_page = SettingsPage(self)
         self.settings_page.setObjectName("settingsPage")
@@ -163,6 +168,14 @@ class MainWindow(FluentWindow):
             self.logs_page,
             FluentIcon.DOCUMENT,
             "Logs",
+            NavigationItemPosition.SCROLL
+        )
+
+        # Devices
+        self.addSubInterface(
+            self.devices_page,
+            FluentIcon.IOT,
+            "Devices",
             NavigationItemPosition.SCROLL
         )
 
@@ -310,6 +323,7 @@ class MainWindow(FluentWindow):
         self._sombra_service.cleanup()
         self._hotkey_service.cleanup()
         self._update_service.cleanup()
+        self.devices_page.cleanup()
 
         # Stop async bridge
         bridge = get_async_bridge()

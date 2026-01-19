@@ -31,7 +31,9 @@ Returns: Server-Sent Events with real-time thinking updates
 
 ### Client Logs (WebSocket)
 ```
-WS /api/logs/stream - клиент отправляет логи в реалтайме
+WS /api/logs/stream - клиент отправляет логи в реалтайме (WRITE)
+WS /api/logs/watch - читать логи в реалтайме (READ)
+GET /api/logs/watch/sse - SSE альтернатива для чтения логов
 GET /api/logs/clients - подключённые клиенты
 GET /api/logs/buffer - последние логи от всех клиентов
 GET /api/logs/buffer/{client_id} - логи конкретного клиента
