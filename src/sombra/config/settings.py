@@ -17,13 +17,25 @@ class Settings:
             env_path: Optional path to .env file. If not provided, searches in
                      current directory and parent directories.
         """
+        # For PyInstaller builds, look for .env next to the executable
         if env_path:
             load_dotenv(env_path)
         else:
-            load_dotenv()
+            # Try multiple locations
+            import sys
+            if getattr(sys, 'frozen', False):
+                # Running as compiled executable
+                exe_dir = Path(sys.executable).parent
+                env_file = exe_dir / '.env'
+                if env_file.exists():
+                    load_dotenv(env_file)
+                else:
+                    load_dotenv()
+            else:
+                load_dotenv()
 
-        # Sombra Backend
-        self.sombra_api_url: str = os.getenv("SOMBRA_API_URL", "http://localhost:8080")
+        # Sombra Backend (default to production server)
+        self.sombra_api_url: str = os.getenv("SOMBRA_API_URL", "http://90.156.230.49:8080")
         self.sombra_session_id: str = os.getenv("SOMBRA_SESSION_ID", "owner")
 
         # Whisper STT Service
