@@ -55,15 +55,17 @@ class UpdateChecker(QThread):
 
             if latest > current:
                 logger.info(f"Update available: {current} -> {latest}")
-                # Find portable zip asset
+                # Find zip asset (portable or any zip)
                 download_url = None
                 for asset in data.get("assets", []):
                     name = asset.get("name", "")
                     logger.debug(f"Asset: {name}")
-                    if "Portable" in name and name.endswith(".zip"):
+                    # Prefer Portable, but accept any zip
+                    if name.endswith(".zip"):
                         download_url = asset.get("browser_download_url")
-                        logger.info(f"Found portable zip: {name}")
-                        break
+                        logger.info(f"Found update zip: {name}")
+                        if "Portable" in name:
+                            break  # Prefer portable, stop searching
 
                 if download_url:
                     release_notes = data.get("body", "")
