@@ -15,6 +15,7 @@ from qfluentwidgets import (
     InfoBar,
     InfoBarPosition,
     isDarkTheme,
+    StateToolTip,
 )
 
 from .pages.home_page import HomePage
@@ -65,6 +66,8 @@ class MainWindow(FluentWindow):
 
         # Update service
         self._update_service = UpdateService(self)
+        self._update_tooltip: StateToolTip | None = None
+        self._update_version: str | None = None
 
         # Services dict for pages
         self._services = {
@@ -257,40 +260,54 @@ class MainWindow(FluentWindow):
 
     @Slot(str, str)
     def _on_update_available(self, version: str, release_notes: str) -> None:
-        """Auto-download update without asking."""
+        """Auto-download update with progress indicator."""
         logger.info(f"Update available: v{version}, downloading automatically...")
-        InfoBar.info(
-            title="Обновление",
-            content=f"Загружаю v{version}...",
-            parent=self,
-            position=InfoBarPosition.TOP_RIGHT,
-            duration=3000
+        self._update_version = version
+
+        # Show progress tooltip
+        self._update_tooltip = StateToolTip(
+            "Обновление",
+            f"Загружаю v{version}... 0%",
+            self
         )
+        self._update_tooltip.move(self.width() - 300, 50)
+        self._update_tooltip.show()
+
         self._update_service.download_update()
 
     @Slot(int, int)
     def _on_download_progress(self, downloaded: int, total: int) -> None:
-        """Silent progress tracking."""
-        pass  # No UI feedback needed
+        """Update progress indicator."""
+        if self._update_tooltip and total > 0:
+            percent = int(downloaded * 100 / total)
+            mb_down = downloaded / (1024 * 1024)
+            mb_total = total / (1024 * 1024)
+            self._update_tooltip.setContent(
+                f"Загружаю v{self._update_version}... {percent}% ({mb_down:.1f}/{mb_total:.1f} MB)"
+            )
 
     @Slot(str)
     def _on_update_ready(self, path: str) -> None:
         """Auto-apply update and restart."""
         logger.info("Update downloaded, applying and restarting...")
-        InfoBar.success(
-            title="Обновление",
-            content="Перезапускаюсь...",
-            parent=self,
-            position=InfoBarPosition.TOP_RIGHT,
-            duration=2000
-        )
+
+        if self._update_tooltip:
+            self._update_tooltip.setContent("Установка... Перезапуск через 2 сек")
+            self._update_tooltip.setState(True)  # Success state
+
         # Small delay to show the message, then apply
-        QTimer.singleShot(1500, self._update_service.apply_update)
+        QTimer.singleShot(2000, self._update_service.apply_update)
 
     @Slot(str)
     def _on_update_error(self, error: str) -> None:
-        """Log error silently."""
+        """Show error in tooltip."""
         logger.error(f"Update failed: {error}")
+
+        if self._update_tooltip:
+            self._update_tooltip.setContent(f"Ошибка: {error[:50]}")
+            self._update_tooltip.setState(True)
+            # Hide after 5 seconds
+            QTimer.singleShot(5000, self._update_tooltip.close)
 
     # ===== Public Methods =====
 
