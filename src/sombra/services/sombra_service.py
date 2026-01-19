@@ -57,7 +57,7 @@ class SombraService(QObject):
 
         payload = {
             "query": query,
-            "sessionId": session.session_id,
+            "session_id": session.session_id,
         }
 
         self.query_sent.emit(query)
@@ -160,7 +160,7 @@ class SombraService(QObject):
             """Send the chat request."""
             payload = {
                 "query": query,
-                "sessionId": session.session_id,
+                "session_id": session.session_id,
             }
 
             response = await client.post(
