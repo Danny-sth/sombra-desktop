@@ -215,19 +215,31 @@ class UpdateService(QObject):
 
     def _apply_update_windows(self, app_dir: Path) -> bool:
         """Apply update on Windows."""
+        # Convert paths to proper Windows format with escaped quotes
+        zip_path = str(self._update_path).replace('/', '\\')
+        dest_path = str(app_dir.parent).replace('/', '\\')
+        exe_path = str(app_dir / 'Sombra.exe').replace('/', '\\')
+
         # Create batch script that waits for app to close, then updates
         script = f'''@echo off
+chcp 65001 >nul
 echo Waiting for Sombra to close...
-timeout /t 2 /nobreak > nul
+timeout /t 3 /nobreak > nul
 
 echo Extracting update...
-powershell -Command "Expand-Archive -Force '{self._update_path}' '{app_dir.parent}'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
+
+if %ERRORLEVEL% NEQ 0 (
+    echo Update failed!
+    pause
+    exit /b 1
+)
 
 echo Starting Sombra...
-start "" "{app_dir / 'Sombra.exe'}"
+start "" "{exe_path}"
 
 echo Cleaning up...
-del "{self._update_path}"
+del "{zip_path}"
 del "%~f0"
 '''
         script_path = Path(tempfile.gettempdir()) / "sombra_update.bat"
