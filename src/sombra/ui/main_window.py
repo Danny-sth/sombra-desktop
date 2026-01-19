@@ -23,11 +23,6 @@ from .pages.agents_page import AgentsPage
 from .pages.tasks_page import TasksPage
 from .pages.logs_page import LogsPage
 from .pages.settings_page import SettingsPage
-from .components.update_dialog import (
-    UpdateAvailableDialog,
-    UpdateProgressDialog,
-    UpdateErrorDialog,
-)
 
 from ..core.async_bridge import get_async_bridge
 from ..services.audio_service import AudioService
@@ -69,7 +64,6 @@ class MainWindow(FluentWindow):
 
         # Update service
         self._update_service = UpdateService(self)
-        self._update_dialog = None
 
         # Services dict for pages
         self._services = {
@@ -245,44 +239,40 @@ class MainWindow(FluentWindow):
 
     @Slot(str, str)
     def _on_update_available(self, version: str, release_notes: str) -> None:
-        """Show update available dialog."""
-        dialog = UpdateAvailableDialog(version, release_notes, self)
-        if dialog.exec():
-            # User wants to update
-            self._show_download_dialog()
-            self._update_service.download_update()
-
-    def _show_download_dialog(self) -> None:
-        """Show download progress dialog."""
-        self._update_dialog = UpdateProgressDialog(self)
-        self._update_dialog.cancelled.connect(self._update_service.cancel_download)
-        self._update_dialog.show()
+        """Auto-download update without asking."""
+        logger.info(f"Update available: v{version}, downloading automatically...")
+        InfoBar.info(
+            title="Обновление",
+            content=f"Загружаю v{version}...",
+            parent=self,
+            position=InfoBarPosition.TOP_RIGHT,
+            duration=3000
+        )
+        self._update_service.download_update()
 
     @Slot(int, int)
     def _on_download_progress(self, downloaded: int, total: int) -> None:
-        """Update download progress."""
-        if self._update_dialog:
-            self._update_dialog.update_progress(downloaded, total)
+        """Silent progress tracking."""
+        pass  # No UI feedback needed
 
     @Slot(str)
     def _on_update_ready(self, path: str) -> None:
-        """Handle update ready to install."""
-        if self._update_dialog:
-            self._update_dialog.set_ready()
-            # Connect restart button
-            self._update_dialog.yesButton.clicked.connect(
-                lambda: self._update_service.apply_update()
-            )
+        """Auto-apply update and restart."""
+        logger.info("Update downloaded, applying and restarting...")
+        InfoBar.success(
+            title="Обновление",
+            content="Перезапускаюсь...",
+            parent=self,
+            position=InfoBarPosition.TOP_RIGHT,
+            duration=2000
+        )
+        # Small delay to show the message, then apply
+        QTimer.singleShot(1500, self._update_service.apply_update)
 
     @Slot(str)
     def _on_update_error(self, error: str) -> None:
-        """Handle update error."""
-        if self._update_dialog:
-            self._update_dialog.close()
-            self._update_dialog = None
-
-        dialog = UpdateErrorDialog(error, self)
-        dialog.exec()
+        """Log error silently."""
+        logger.error(f"Update failed: {error}")
 
     # ===== Public Methods =====
 
