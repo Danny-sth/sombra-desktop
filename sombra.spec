@@ -108,7 +108,7 @@ excludes = [
 
 # Analysis
 a = Analysis(
-    [str(SRC_DIR / 'sombra' / '__main__.py')],
+    [str(SRC_DIR / 'sombra' / 'entry.py')],
     pathex=[str(SRC_DIR)],
     binaries=[],
     datas=datas,
