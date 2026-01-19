@@ -213,9 +213,14 @@ class MainWindow(FluentWindow):
         self._update_service.error.connect(self._on_update_error)
 
     def _setup_auto_update(self) -> None:
-        """Setup auto-update check on startup."""
+        """Setup auto-update check on startup and periodic checks."""
         # Check for updates 3 seconds after startup
         QTimer.singleShot(3000, self._update_service.check_for_updates)
+
+        # Periodic check every 5 minutes
+        self._update_timer = QTimer(self)
+        self._update_timer.timeout.connect(self._update_service.check_for_updates)
+        self._update_timer.start(5 * 60 * 1000)  # 5 minutes
 
     # ===== Signal Handlers =====
 
