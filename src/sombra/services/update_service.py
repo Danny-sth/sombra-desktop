@@ -228,71 +228,72 @@ class UpdateService(QObject):
         """Apply update on Windows."""
         import os as _os
 
-        # Get current process ID to wait for it to close
-        pid = _os.getpid()
-
         # Convert paths to proper Windows format
         zip_path = str(self._update_path).replace('/', '\\')
         dest_path = str(app_dir.parent).replace('/', '\\')
         exe_path = str(app_dir / 'Sombra.exe').replace('/', '\\')
 
-        # Create batch script that waits for app to close, then updates
+        logger.info(f"Update paths - zip: {zip_path}, dest: {dest_path}, exe: {exe_path}")
+
+        # Create batch script - simple delay approach (most reliable)
         script = f'''@echo off
 chcp 65001 >nul
-echo Waiting for Sombra (PID {pid}) to close...
+echo Sombra Update Script
+echo ====================
+echo.
+echo Waiting for Sombra to close...
+timeout /t 3 /nobreak >nul
 
-:waitloop
-tasklist /FI "PID eq {pid}" 2>NUL | find /I "{pid}" >NUL
-if %ERRORLEVEL%==0 (
-    timeout /t 1 /nobreak >nul
-    goto waitloop
-)
+echo.
+echo Extracting update from:
+echo {zip_path}
+echo To:
+echo {dest_path}
+echo.
 
-echo Process closed. Extracting update...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
 
 if %ERRORLEVEL% NEQ 0 (
-    echo Update failed!
+    echo.
+    echo ERROR: Update extraction failed!
+    echo Error code: %ERRORLEVEL%
     pause
     exit /b 1
 )
 
+echo.
+echo Update extracted successfully!
 echo Starting Sombra...
+timeout /t 1 /nobreak >nul
+
 start "" "{exe_path}"
 
+echo.
 echo Cleaning up...
-del "{zip_path}"
+del "{zip_path}" 2>nul
+echo Done!
+timeout /t 2 /nobreak >nul
 del "%~f0"
 '''
         script_path = Path(tempfile.gettempdir()) / "sombra_update.bat"
         script_path.write_text(script, encoding="utf-8")
 
         logger.info(f"Update script created: {script_path}")
-        logger.info(f"Current PID: {pid}, will wait for process to close")
 
-        # Run script in new console, fully detached
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        # Run script in visible console so user can see progress
         subprocess.Popen(
-            ["cmd", "/c", "start", "Sombra Update", "/min", str(script_path)],
-            startupinfo=startupinfo,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
-            close_fds=True,
-            shell=False
+            ["cmd", "/c", str(script_path)],
+            creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.CREATE_NEW_PROCESS_GROUP,
         )
 
-        logger.info("Update script launched, forcing exit...")
+        logger.info("Update script launched, exiting application...")
 
-        # Force exit - QApplication.quit() is not enough on Windows
-        from PySide6.QtWidgets import QApplication
-        QApplication.quit()
-
-        # Schedule hard exit after short delay to let Qt cleanup
+        # Force exit after short delay
         import threading
         def force_exit():
             import time
-            time.sleep(0.5)
-            _os._exit(0)  # Hard exit, bypasses cleanup
+            time.sleep(1)
+            _os._exit(0)
 
         threading.Thread(target=force_exit, daemon=True).start()
         return True
