@@ -4,7 +4,10 @@ import sys
 from typing import Optional
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication
+
+from qfluentwidgets import setTheme, setThemeColor, Theme
 
 from .config.settings import init_settings
 from .core.async_bridge import init_async_bridge
@@ -16,7 +19,6 @@ from .services.hotkey_service import HotkeyService
 from .services.sombra_service import SombraService
 from .services.wakeword_service import WakeWordService
 from .services.whisper_service import WhisperService
-from .themes.theme_manager import init_theme_manager
 from .ui.main_window import MainWindow
 
 
@@ -53,7 +55,7 @@ class SombraApp:
         self._app = QApplication(sys.argv)
         self._app.setApplicationName("Sombra Desktop")
         self._app.setOrganizationName("Sombra")
-        self._app.setApplicationVersion("0.1.0")
+        self._app.setApplicationVersion("1.1.0")
 
         # Initialize settings
         init_settings()
@@ -64,9 +66,13 @@ class SombraApp:
         async_bridge = init_async_bridge()
         async_bridge.start()
 
-        # Initialize theme manager and apply initial theme
-        theme_manager = init_theme_manager(self._app)
-        theme_manager.apply_theme(theme_manager.current_theme)
+        # Initialize Fluent theme (before creating widgets)
+        settings = get_settings()
+        if settings.theme == "light":
+            setTheme(Theme.LIGHT)
+        else:
+            setTheme(Theme.DARK)
+        setThemeColor(QColor("#e94560"))  # Sombra accent color
 
         # Initialize services
         self._audio_service = AudioService()
@@ -79,7 +85,6 @@ class SombraApp:
         self._hotkey_service.start()
 
         # Start wake word listener if enabled
-        settings = get_settings()
         if settings.wake_word_enabled and self._wakeword_service.is_available:
             self._wakeword_service.start_listening()
 

@@ -1,23 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Background -->
-  <circle cx="256" cy="256" r="250" fill="#1a1a2e"/>
-  <circle cx="256" cy="256" r="245" fill="none" stroke="#333355" stroke-width="3"/>
+  <!-- Background gradient -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#2a2a4e"/>
+      <stop offset="100%" stop-color="#0f0f1a"/>
+    </radialGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e94560"/>
+      <stop offset="100%" stop-color="#ff6b8a"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#e94560" flood-opacity="0.6"/>
+    </filter>
+  </defs>
 
-  <!-- Microphone body -->
-  <ellipse cx="256" cy="230" rx="50" ry="75" fill="#e94560"/>
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="250" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="245" fill="none" stroke="#e94560" stroke-width="2" opacity="0.3"/>
 
-  <!-- Microphone stand -->
-  <rect x="246" y="305" width="20" height="45" fill="#e94560"/>
-  <ellipse cx="256" cy="360" rx="50" ry="10" fill="#e94560"/>
+  <!-- Shadow/Hood silhouette -->
+  <path d="M256 80
+           C160 80 100 160 100 260
+           C100 340 140 400 180 430
+           L180 440 C180 460 200 480 256 480
+           C312 480 332 460 332 440
+           L332 430 C372 400 412 340 412 260
+           C412 160 352 80 256 80Z"
+        fill="#1a1a2e" filter="url(#shadow)"/>
 
-  <!-- Sound waves left -->
-  <path d="M150 190 Q115 256 150 322" fill="none" stroke="#e94560" stroke-width="14" stroke-linecap="round"/>
-  <path d="M105 150 Q55 256 105 362" fill="none" stroke="#e94560" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+  <!-- Inner face area -->
+  <ellipse cx="256" cy="280" rx="100" ry="120" fill="#12121f"/>
 
-  <!-- Sound waves right -->
-  <path d="M362 190 Q397 256 362 322" fill="none" stroke="#e94560" stroke-width="14" stroke-linecap="round"/>
-  <path d="M407 150 Q457 256 407 362" fill="none" stroke="#e94560" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+  <!-- AI Eyes -->
+  <ellipse cx="210" cy="250" rx="28" ry="20" fill="#e94560" opacity="0.9"/>
+  <ellipse cx="302" cy="250" rx="28" ry="20" fill="#e94560" opacity="0.9"/>
 
-  <!-- AI indicator -->
-  <circle cx="256" cy="210" r="12" fill="#4ecca3"/>
+  <!-- Eye cores -->
+  <circle cx="210" cy="250" r="8" fill="#fff"/>
+  <circle cx="302" cy="250" r="8" fill="#fff"/>
+
+  <!-- Voice wave indicator -->
+  <path d="M200 340 Q230 320 256 340 Q282 360 312 340"
+        fill="none" stroke="#4ecca3" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Digital accents -->
+  <rect x="150" y="180" width="4" height="20" fill="#e94560" opacity="0.5"/>
+  <rect x="358" y="180" width="4" height="20" fill="#e94560" opacity="0.5"/>
+  <rect x="165" y="160" width="3" height="30" fill="#e94560" opacity="0.3"/>
+  <rect x="344" y="160" width="3" height="30" fill="#e94560" opacity="0.3"/>
 </svg>

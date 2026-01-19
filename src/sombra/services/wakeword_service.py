@@ -151,20 +151,15 @@ class WakeWordService(QObject):
         if not self._is_listening:
             return
 
+        # Signal thread to stop
         self._stop_event.set()
 
+        # Wait for thread to finish (it will close the stream itself)
         if self._listen_thread:
-            self._listen_thread.join(timeout=2.0)
+            self._listen_thread.join(timeout=3.0)
             self._listen_thread = None
 
-        if self._stream:
-            try:
-                self._stream.stop_stream()
-                self._stream.close()
-            except Exception:
-                pass
-            self._stream = None
-
+        # Terminate PyAudio after stream is closed by the thread
         if self._pa:
             try:
                 self._pa.terminate()
@@ -172,6 +167,7 @@ class WakeWordService(QObject):
                 pass
             self._pa = None
 
+        # Cleanup Porcupine last
         self._cleanup_porcupine()
         self._is_listening = False
         self.listening_stopped.emit()
@@ -191,22 +187,24 @@ class WakeWordService(QObject):
         if not self._porcupine or not self._pa:
             return
 
+        stream = None
         try:
             # Open audio stream
-            self._stream = self._pa.open(
+            stream = self._pa.open(
                 format=pyaudio.paInt16,
                 channels=1,
                 rate=self._porcupine.sample_rate,
                 input=True,
                 frames_per_buffer=self._porcupine.frame_length
             )
+            self._stream = stream
 
             logger.info(f"Audio stream opened at {self._porcupine.sample_rate}Hz, listening...")
 
             while not self._stop_event.is_set():
                 try:
                     # Read audio chunk
-                    audio_data = self._stream.read(self._porcupine.frame_length, exception_on_overflow=False)
+                    audio_data = stream.read(self._porcupine.frame_length, exception_on_overflow=False)
                     audio = np.frombuffer(audio_data, dtype=np.int16)
 
                     # Process with Porcupine
@@ -219,11 +217,21 @@ class WakeWordService(QObject):
                 except Exception as e:
                     if not self._stop_event.is_set():
                         logger.error(f"Error reading audio: {e}")
+                    break  # Exit loop on error
 
         except Exception as e:
             logger.error(f"Wake word listening error: {e}")
             if not self._stop_event.is_set():
                 self.error.emit(f"Wake word listening error: {e}")
+        finally:
+            # Close stream in the same thread that opened it
+            if stream:
+                try:
+                    stream.stop_stream()
+                    stream.close()
+                except Exception:
+                    pass
+            self._stream = None
 
     def cleanup(self) -> None:
         """Clean up resources."""
