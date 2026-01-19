@@ -7,6 +7,7 @@ Cross-platform build configuration (Windows/Linux/macOS)
 import sys
 import os
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 # Detect platform
 is_windows = sys.platform == 'win32'
@@ -40,6 +41,12 @@ if MODELS_DIR.exists():
 env_example = ROOT_DIR / '.env.example'
 if env_example.exists():
     datas.append((str(env_example), '.'))
+
+# Collect pvporcupine resources (keyword files, lib files)
+datas += collect_data_files('pvporcupine')
+
+# Collect silero_vad data
+datas += collect_data_files('silero_vad')
 
 # Hidden imports for dynamic loading
 hiddenimports = [
