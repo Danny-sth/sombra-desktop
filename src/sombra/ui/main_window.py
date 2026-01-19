@@ -1,6 +1,7 @@
 """Main application window with Fluent Design navigation."""
 
-from PySide6.QtCore import Qt, Slot
+import logging
+from PySide6.QtCore import Qt, Slot, QTimer
 from PySide6.QtGui import QIcon, QColor, QCloseEvent
 from PySide6.QtWidgets import QApplication
 
@@ -22,6 +23,11 @@ from .pages.agents_page import AgentsPage
 from .pages.tasks_page import TasksPage
 from .pages.logs_page import LogsPage
 from .pages.settings_page import SettingsPage
+from .components.update_dialog import (
+    UpdateAvailableDialog,
+    UpdateProgressDialog,
+    UpdateErrorDialog,
+)
 
 from ..core.async_bridge import get_async_bridge
 from ..services.audio_service import AudioService
@@ -29,6 +35,9 @@ from ..services.whisper_service import WhisperService
 from ..services.sombra_service import SombraService
 from ..services.hotkey_service import HotkeyService
 from ..services.wakeword_service import WakeWordService
+from ..services.update_service import UpdateService
+
+logger = logging.getLogger(__name__)
 
 
 class MainWindow(FluentWindow):
@@ -58,6 +67,10 @@ class MainWindow(FluentWindow):
         self._hotkey_service = hotkey_service
         self._wakeword_service = wakeword_service
 
+        # Update service
+        self._update_service = UpdateService(self)
+        self._update_dialog = None
+
         # Services dict for pages
         self._services = {
             "audio": audio_service,
@@ -73,6 +86,7 @@ class MainWindow(FluentWindow):
         self._init_pages()
         self._init_navigation()
         self._connect_signals()
+        self._setup_auto_update()
 
     def _setup_window(self) -> None:
         """Configure window properties."""
@@ -189,6 +203,17 @@ class MainWindow(FluentWindow):
         # Settings theme change
         self.settings_page.theme_changed.connect(self._on_theme_changed)
 
+        # Update signals
+        self._update_service.update_available.connect(self._on_update_available)
+        self._update_service.download_progress.connect(self._on_download_progress)
+        self._update_service.update_ready.connect(self._on_update_ready)
+        self._update_service.error.connect(self._on_update_error)
+
+    def _setup_auto_update(self) -> None:
+        """Setup auto-update check on startup."""
+        # Check for updates 3 seconds after startup
+        QTimer.singleShot(3000, self._update_service.check_for_updates)
+
     # ===== Signal Handlers =====
 
     @Slot(str)
@@ -219,6 +244,49 @@ class MainWindow(FluentWindow):
         """Handle theme change from settings."""
         # Theme is already applied by settings page
         pass
+
+    # ===== Update Handlers =====
+
+    @Slot(str, str)
+    def _on_update_available(self, version: str, release_notes: str) -> None:
+        """Show update available dialog."""
+        dialog = UpdateAvailableDialog(version, release_notes, self)
+        if dialog.exec():
+            # User wants to update
+            self._show_download_dialog()
+            self._update_service.download_update()
+
+    def _show_download_dialog(self) -> None:
+        """Show download progress dialog."""
+        self._update_dialog = UpdateProgressDialog(self)
+        self._update_dialog.cancelled.connect(self._update_service.cancel_download)
+        self._update_dialog.show()
+
+    @Slot(int, int)
+    def _on_download_progress(self, downloaded: int, total: int) -> None:
+        """Update download progress."""
+        if self._update_dialog:
+            self._update_dialog.update_progress(downloaded, total)
+
+    @Slot(str)
+    def _on_update_ready(self, path: str) -> None:
+        """Handle update ready to install."""
+        if self._update_dialog:
+            self._update_dialog.set_ready()
+            # Connect restart button
+            self._update_dialog.yesButton.clicked.connect(
+                lambda: self._update_service.apply_update()
+            )
+
+    @Slot(str)
+    def _on_update_error(self, error: str) -> None:
+        """Handle update error."""
+        if self._update_dialog:
+            self._update_dialog.close()
+            self._update_dialog = None
+
+        dialog = UpdateErrorDialog(error, self)
+        dialog.exec()
 
     # ===== Public Methods =====
 
@@ -255,6 +323,7 @@ class MainWindow(FluentWindow):
         self._whisper_service.cleanup()
         self._sombra_service.cleanup()
         self._hotkey_service.cleanup()
+        self._update_service.cleanup()
 
         # Stop async bridge
         bridge = get_async_bridge()
