@@ -167,32 +167,40 @@ class WebSocketLogHandler(logging.Handler):
     async def _receive_commands(self, ws):
         """Receive and handle commands from server."""
         logger = logging.getLogger(__name__)
+        logger.info(f"Command receiver started, registered handlers: {list(self._command_handlers.keys())}")
 
         while not self._stop_event.is_set():
             try:
                 message = await asyncio.wait_for(ws.recv(), timeout=1.0)
+                logger.debug(f"Received WebSocket message: {message[:200]}")
 
                 try:
                     data = json.loads(message)
-                    if data.get("type") == "command":
+                    msg_type = data.get("type")
+                    logger.info(f"Parsed message type: {msg_type}")
+
+                    if msg_type == "command":
                         command = data.get("command")
                         cmd_data = data.get("data", {})
-                        logger.info(f"Received server command: {command}")
+                        logger.info(f"Received server command: {command}, data: {cmd_data}")
 
                         handler = self._command_handlers.get(command)
                         if handler:
+                            logger.info(f"Executing handler for command: {command}")
                             try:
                                 handler(cmd_data)
+                                logger.info(f"Handler executed successfully for: {command}")
                             except Exception as e:
-                                logger.error(f"Command handler error: {e}")
+                                logger.error(f"Command handler error: {e}", exc_info=True)
                         else:
-                            logger.warning(f"Unknown command: {command}")
-                except json.JSONDecodeError:
-                    pass
+                            logger.warning(f"No handler for command: {command}, available: {list(self._command_handlers.keys())}")
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse message as JSON: {e}")
 
             except asyncio.TimeoutError:
                 continue
-            except WebSocketException:
+            except WebSocketException as e:
+                logger.warning(f"WebSocket exception in receiver: {e}")
                 break
 
 
@@ -292,8 +300,12 @@ def register_command_handler(command: str, handler: Callable):
         command: Command name (e.g., 'force_update', 'restart')
         handler: Callable to invoke when command received
     """
+    logger = logging.getLogger(__name__)
     if _ws_handler:
         _ws_handler.register_command_handler(command, handler)
+        logger.info(f"Registered command handler: {command}")
+    else:
+        logger.error(f"Cannot register command handler '{command}' - WebSocket handler not initialized!")
 
 
 def get_ws_handler() -> Optional[WebSocketLogHandler]:
