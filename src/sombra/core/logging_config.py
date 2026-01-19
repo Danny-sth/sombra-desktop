@@ -12,7 +12,7 @@ import threading
 from datetime import datetime
 from logging.handlers import RotatingFileHandler, QueueHandler, QueueListener
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
 
 import websockets
 from websockets.exceptions import WebSocketException
@@ -49,7 +49,10 @@ def get_log_dir() -> Path:
 
 
 class WebSocketLogHandler(logging.Handler):
-    """Async handler that sends logs to server via WebSocket."""
+    """Async handler that sends logs to server via WebSocket.
+
+    Also receives commands from server (bidirectional).
+    """
 
     def __init__(self, url: str, level: int = logging.INFO):
         super().__init__(level)
@@ -58,6 +61,16 @@ class WebSocketLogHandler(logging.Handler):
         self._connected = False
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
+        self._command_handlers: dict[str, Callable] = {}
+
+    def register_command_handler(self, command: str, handler: Callable):
+        """Register handler for server command.
+
+        Args:
+            command: Command name (e.g., 'force_update', 'restart')
+            handler: Callable to invoke when command received
+        """
+        self._command_handlers[command] = handler
 
     def start(self):
         """Start the background sender thread."""
@@ -100,7 +113,9 @@ class WebSocketLogHandler(logging.Handler):
         asyncio.run(self._async_sender())
 
     async def _async_sender(self):
-        """Async loop that sends queued logs."""
+        """Async loop that sends queued logs and receives commands."""
+        logger = logging.getLogger(__name__)
+
         while not self._stop_event.is_set():
             try:
                 async with websockets.connect(
@@ -111,23 +126,74 @@ class WebSocketLogHandler(logging.Handler):
                 ) as ws:
                     self._connected = True
 
-                    while not self._stop_event.is_set():
-                        try:
-                            # Get with timeout to check stop event periodically
-                            log_entry = self._queue.get(timeout=0.5)
-                            await ws.send(json.dumps(log_entry))
-                        except queue.Empty:
-                            continue
-                        except WebSocketException:
-                            break
+                    # Run sender and receiver concurrently
+                    sender_task = asyncio.create_task(self._send_logs(ws))
+                    receiver_task = asyncio.create_task(self._receive_commands(ws))
 
-            except Exception:
+                    # Wait until one fails or stop requested
+                    done, pending = await asyncio.wait(
+                        [sender_task, receiver_task],
+                        return_when=asyncio.FIRST_COMPLETED
+                    )
+
+                    # Cancel pending tasks
+                    for task in pending:
+                        task.cancel()
+                        try:
+                            await task
+                        except asyncio.CancelledError:
+                            pass
+
+            except Exception as e:
                 self._connected = False
                 # Wait before reconnect
                 for _ in range(50):  # 5 seconds total
                     if self._stop_event.is_set():
                         return
                     await asyncio.sleep(0.1)
+
+    async def _send_logs(self, ws):
+        """Send queued logs to server."""
+        while not self._stop_event.is_set():
+            try:
+                # Get with timeout to check stop event periodically
+                log_entry = self._queue.get(timeout=0.5)
+                await ws.send(json.dumps(log_entry))
+            except queue.Empty:
+                continue
+            except WebSocketException:
+                break
+
+    async def _receive_commands(self, ws):
+        """Receive and handle commands from server."""
+        logger = logging.getLogger(__name__)
+
+        while not self._stop_event.is_set():
+            try:
+                message = await asyncio.wait_for(ws.recv(), timeout=1.0)
+
+                try:
+                    data = json.loads(message)
+                    if data.get("type") == "command":
+                        command = data.get("command")
+                        cmd_data = data.get("data", {})
+                        logger.info(f"Received server command: {command}")
+
+                        handler = self._command_handlers.get(command)
+                        if handler:
+                            try:
+                                handler(cmd_data)
+                            except Exception as e:
+                                logger.error(f"Command handler error: {e}")
+                        else:
+                            logger.warning(f"Unknown command: {command}")
+                except json.JSONDecodeError:
+                    pass
+
+            except asyncio.TimeoutError:
+                continue
+            except WebSocketException:
+                break
 
 
 # Global handler reference for cleanup
@@ -217,3 +283,19 @@ def cleanup_logging():
 def get_log_file_path() -> Path:
     """Get path to main log file."""
     return get_log_dir() / "sombra.log"
+
+
+def register_command_handler(command: str, handler: Callable):
+    """Register handler for server command.
+
+    Args:
+        command: Command name (e.g., 'force_update', 'restart')
+        handler: Callable to invoke when command received
+    """
+    if _ws_handler:
+        _ws_handler.register_command_handler(command, handler)
+
+
+def get_ws_handler() -> Optional[WebSocketLogHandler]:
+    """Get WebSocket handler for command registration."""
+    return _ws_handler

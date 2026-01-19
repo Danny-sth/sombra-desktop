@@ -27,6 +27,7 @@ from .pages.devices_page import DevicesPage
 from .pages.settings_page import SettingsPage
 
 from ..core.async_bridge import get_async_bridge
+from ..core.logging_config import register_command_handler
 from ..services.audio_service import AudioService
 from ..services.whisper_service import WhisperService
 from ..services.sombra_service import SombraService
@@ -224,6 +225,28 @@ class MainWindow(FluentWindow):
         self._update_timer = QTimer(self)
         self._update_timer.timeout.connect(self._update_service.check_for_updates)
         self._update_timer.start(5 * 60 * 1000)  # 5 minutes
+
+        # Register remote command handlers
+        self._setup_remote_commands()
+
+    def _setup_remote_commands(self) -> None:
+        """Register handlers for server commands."""
+        # Force update command from server
+        register_command_handler("force_update", self._handle_force_update_command)
+        register_command_handler("restart", self._handle_restart_command)
+        logger.info("Remote command handlers registered")
+
+    def _handle_force_update_command(self, data: dict) -> None:
+        """Handle force_update command from server."""
+        logger.info("Received force_update command from server")
+        # Schedule update check on main thread (Qt requirement)
+        QTimer.singleShot(0, self._update_service.check_for_updates)
+
+    def _handle_restart_command(self, data: dict) -> None:
+        """Handle restart command from server."""
+        logger.info("Received restart command from server")
+        # Schedule restart on main thread
+        QTimer.singleShot(0, QApplication.quit)
 
     # ===== Signal Handlers =====
 
