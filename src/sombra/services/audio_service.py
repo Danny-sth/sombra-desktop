@@ -130,13 +130,20 @@ class AudioService(QObject):
         if not self._is_recording:
             return b""
 
+        # Mark as stopping first to prevent callback from processing more data
         self._is_recording = False
         self._auto_stop = False
+        self._stop_requested = True
 
         if self._stream:
-            self._stream.stop()
-            self._stream.close()
-            self._stream = None
+            try:
+                # Stop the stream - this blocks until callback finishes
+                self._stream.stop()
+                self._stream.close()
+            except Exception as e:
+                logger.warning(f"Error stopping stream: {e}")
+            finally:
+                self._stream = None
 
         data = self._buffer.getvalue()
         wav = self._to_wav(data)
