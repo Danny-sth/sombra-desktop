@@ -1,6 +1,5 @@
 """Entry point for PyInstaller builds."""
 
-import logging
 import sys
 import os
 
@@ -15,12 +14,9 @@ else:
 
 def main() -> int:
     """Main entry point."""
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S'
-    )
+    # Configure logging first
+    from sombra.core.logging_config import setup_logging
+    setup_logging()
 
     from sombra.app import main as app_main
 

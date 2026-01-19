@@ -1,17 +1,13 @@
 """Entry point for running as a module: python -m sombra"""
 
-import logging
 import sys
 
 
 def main() -> int:
     """Main entry point."""
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S'
-    )
+    # Configure logging first
+    from .core.logging_config import setup_logging
+    setup_logging()
 
     from .app import main as app_main
 
