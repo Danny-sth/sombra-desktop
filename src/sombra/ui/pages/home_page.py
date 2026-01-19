@@ -17,6 +17,8 @@ from qfluentwidgets import (
     isDarkTheme,
 )
 
+from sombra import __version__
+
 
 class HomePage(ScrollArea):
     """Dashboard with status overview and quick actions."""
@@ -177,8 +179,8 @@ class HomePage(ScrollArea):
         layout.setContentsMargins(20, 16, 20, 16)
         layout.setSpacing(8)
 
-        version_label = BodyLabel("Version 1.1")
-        layout.addWidget(version_label)
+        self._version_label = BodyLabel(f"Version {__version__}")
+        layout.addWidget(self._version_label)
 
         desc_label = CaptionLabel(
             "Sombra Desktop is your gateway to the Sombra AI orchestrator. "
