@@ -101,10 +101,18 @@ jobs:
       - name: Rename installer to correct version
         run: |
           cd release
-          # Find the exe and rename to correct version
-          for f in *.exe; do
-            mv "$f" "SombraSetup-${{ steps.version.outputs.version }}.exe"
-          done
+          ls -la
+          # Find and rename exe file to correct version
+          if ls *.exe 1>/dev/null 2>&1; then
+            for f in *.exe; do
+              echo "Renaming $f to SombraSetup-${{ steps.version.outputs.version }}.exe"
+              mv "$f" "SombraSetup-${{ steps.version.outputs.version }}.exe"
+              break  # Only rename first one
+            done
+          else
+            echo "No exe files found!"
+            exit 1
+          fi
           ls -la
 
       - name: Create portable zip
