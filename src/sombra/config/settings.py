@@ -56,6 +56,10 @@ class Settings:
         self.wake_word: str = os.getenv("WAKE_WORD", "jarvis")
         self.porcupine_access_key: Optional[str] = os.getenv("PORCUPINE_ACCESS_KEY")
 
+        # System Tray Settings
+        self.minimize_to_tray: bool = os.getenv("MINIMIZE_TO_TRAY", "true").lower() == "true"
+        self.start_minimized: bool = os.getenv("START_MINIMIZED", "false").lower() == "true"
+
     def _create_default_env(self, env_file: Path) -> None:
         """Create default .env file with production settings."""
         default_env = """# Sombra Desktop Configuration

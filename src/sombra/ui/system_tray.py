@@ -4,7 +4,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon, QWidget
 
-from .main_window import get_app_icon
+from .utils import get_app_icon
 
 
 class SystemTray(QSystemTrayIcon):

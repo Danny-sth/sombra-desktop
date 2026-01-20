@@ -91,6 +91,17 @@ python -m sombra
 
 Релизы: https://github.com/Danny-sth/sombra-desktop/releases
 
+## Deployment Rules
+
+⚠️ **ВАЖНО: Деплой ТОЛЬКО через CI/CD!**
+
+НЕ деплоить вручную через scp/ssh! Над проектом работает команда.
+
+- **Sombra Server**: коммит в репо → CI/CD задеплоит
+- **Sombra Desktop**: GitHub Release → auto-update
+
+Если нужно срочно — спроси у хозяина.
+
 ## Post-Task Hooks
 
 ### ОБЯЗАТЕЛЬНО: Отчёт о работе для Telegram

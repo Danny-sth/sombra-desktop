@@ -20,6 +20,8 @@ from qfluentwidgets import (
     StateToolTip,
 )
 
+from .system_tray import SystemTray
+from .utils import get_app_icon
 from .pages.home_page import HomePage
 from .pages.chat_page import ChatPage
 from .pages.agents_page import AgentsPage
@@ -36,38 +38,9 @@ from ..services.hotkey_service import HotkeyService
 from ..services.wakeword_service import WakeWordService
 from ..services.update_service import UpdateService
 from ..services.remote_commands import init_remote_commands
+from ..config.settings import get_settings
 
 logger = logging.getLogger(__name__)
-
-
-def get_app_icon() -> QIcon:
-    """Get the application icon (cross-platform)."""
-    # Determine base path for resources
-    if getattr(sys, 'frozen', False):
-        # Running as PyInstaller bundle
-        base_path = Path(sys._MEIPASS)
-    else:
-        # Running from source
-        base_path = Path(__file__).parent.parent.parent.parent / "resources"
-
-    icons_path = base_path / "icons"
-
-    # Try PNG first (works everywhere), then ICO (Windows)
-    icon = QIcon()
-
-    # Add multiple sizes for best quality
-    for size in [16, 32, 48, 64, 128, 256, 512]:
-        png_file = icons_path / f"sombra-{size}.png"
-        if png_file.exists():
-            icon.addFile(str(png_file))
-
-    # Fallback to ICO if no PNGs found
-    if icon.isNull():
-        ico_file = icons_path / "sombra.ico"
-        if ico_file.exists():
-            icon = QIcon(str(ico_file))
-
-    return icon
 
 
 class MainWindow(FluentWindow):
@@ -117,6 +90,7 @@ class MainWindow(FluentWindow):
         self._init_pages()
         self._init_navigation()
         self._connect_signals()
+        self._setup_system_tray()
         self._setup_auto_update()
 
     def _setup_window(self) -> None:
@@ -139,6 +113,45 @@ class MainWindow(FluentWindow):
 
         # Dark theme by default
         setTheme(Theme.DARK)
+
+    def _setup_system_tray(self) -> None:
+        """Initialize system tray icon and menu."""
+        self._tray = SystemTray(self)
+        self._force_quit = False
+
+        # Connect tray signals
+        self._tray.show_requested.connect(self._show_from_tray)
+        self._tray.hide_requested.connect(self._hide_to_tray)
+        self._tray.quit_requested.connect(self._quit_app)
+        self._tray.settings_requested.connect(self._show_settings)
+
+        # Show tray icon
+        self._tray.show()
+        self._tray.update_visibility_actions(True)
+
+    def _show_from_tray(self) -> None:
+        """Show and activate window from tray."""
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        if self.isMinimized():
+            self.showNormal()
+        self._tray.update_visibility_actions(True)
+
+    def _hide_to_tray(self) -> None:
+        """Hide window to tray."""
+        self.hide()
+        self._tray.update_visibility_actions(False)
+
+    def _show_settings(self) -> None:
+        """Show settings page."""
+        self._show_from_tray()
+        self.switchTo(self.settings_page)
+
+    def _quit_app(self) -> None:
+        """Actually quit the application."""
+        self._force_quit = True
+        self.close()
 
     def _init_pages(self) -> None:
         """Create all page instances."""
@@ -383,7 +396,26 @@ class MainWindow(FluentWindow):
     # ===== Window Events =====
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """Handle window close - cleanup services."""
+        """Minimize to tray instead of closing, unless force quit."""
+        settings = get_settings()
+
+        if self._force_quit or not settings.minimize_to_tray:
+            # Real quit - cleanup and exit
+            self._cleanup_services()
+            event.accept()
+        else:
+            # Minimize to tray
+            event.ignore()
+            self.hide()
+            self._tray.update_visibility_actions(False)
+            self._tray.show_notification(
+                "Sombra Desktop",
+                "Приложение свёрнуто в трей",
+                duration_ms=2000
+            )
+
+    def _cleanup_services(self) -> None:
+        """Cleanup all services before quit."""
         # Clean up services
         if self._wakeword_service:
             self._wakeword_service.cleanup()
@@ -394,8 +426,10 @@ class MainWindow(FluentWindow):
         self._update_service.cleanup()
         self.devices_page.cleanup()
 
+        # Hide tray icon
+        if hasattr(self, '_tray'):
+            self._tray.hide()
+
         # Stop async bridge
         bridge = get_async_bridge()
         bridge.stop()
-
-        event.accept()

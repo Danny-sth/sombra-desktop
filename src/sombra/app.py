@@ -59,6 +59,9 @@ class SombraApp:
         self._app.setApplicationVersion("1.1.0")
         self._app.setDesktopFileName("sombra")  # Links to sombra.desktop for GNOME
 
+        # Don't quit when window is hidden (for system tray)
+        self._app.setQuitOnLastWindowClosed(False)
+
         # Initialize settings
         init_settings()
 
@@ -93,7 +96,7 @@ class SombraApp:
         if settings.wake_word_enabled and self._wakeword_service.is_available:
             self._wakeword_service.start_listening()
 
-        # Create and show main window
+        # Create main window
         self._main_window = MainWindow(
             audio_service=self._audio_service,
             whisper_service=self._whisper_service,
@@ -101,7 +104,13 @@ class SombraApp:
             hotkey_service=self._hotkey_service,
             wakeword_service=self._wakeword_service,
         )
-        self._main_window.show()
+
+        # Show window or start minimized to tray
+        if settings.start_minimized:
+            # Window stays hidden, tray icon is shown
+            pass
+        else:
+            self._main_window.show()
 
         # Run event loop
         return self._app.exec()
