@@ -228,16 +228,16 @@ class UpdateService(QObject):
         """Apply update on Windows."""
         import os as _os
 
-        # Convert paths to proper Windows format
+        # Get actual paths from running executable
+        current_exe = Path(sys.executable)
         zip_path = str(self._update_path).replace('/', '\\')
-        # Extract directly to app_dir (where Sombra.exe lives)
-        dest_path = str(app_dir).replace('/', '\\')
-        exe_path = str(app_dir / 'Sombra.exe').replace('/', '\\')
+        dest_path = str(current_exe.parent).replace('/', '\\')
+        exe_path = str(current_exe).replace('/', '\\')
 
-        logger.info(f"Update paths - zip: {zip_path}, dest: {dest_path}, exe: {exe_path}")
+        logger.info(f"Update: current_exe={current_exe}, zip={zip_path}, dest={dest_path}")
 
         # Check if needs admin rights
-        needs_admin = "program files" in str(app_dir).lower()
+        needs_admin = "program files" in dest_path.lower()
 
         if needs_admin:
             # Script with self-elevation for Program Files
