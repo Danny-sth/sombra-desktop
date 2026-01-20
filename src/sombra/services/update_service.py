@@ -91,9 +91,10 @@ class UpdateDownloader(QThread):
     download_complete = Signal(str)  # file path
     error = Signal(str)
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, dest_path: str):
         super().__init__()
         self.url = url
+        self.dest_path = dest_path
         self._cancelled = False
 
     def cancel(self):
@@ -103,30 +104,27 @@ class UpdateDownloader(QThread):
     def run(self):
         """Download the update file."""
         try:
-            # Create temp file for download
-            fd, temp_path = tempfile.mkstemp(suffix=".zip", prefix="sombra_update_")
-            os.close(fd)
-
             with httpx.Client(timeout=300, follow_redirects=True) as client:
                 with client.stream("GET", self.url) as response:
                     response.raise_for_status()
                     total = int(response.headers.get("content-length", 0))
                     downloaded = 0
 
-                    with open(temp_path, "wb") as f:
+                    with open(self.dest_path, "wb") as f:
                         for chunk in response.iter_bytes(chunk_size=8192):
                             if self._cancelled:
-                                os.unlink(temp_path)
+                                Path(self.dest_path).unlink(missing_ok=True)
                                 return
 
                             f.write(chunk)
                             downloaded += len(chunk)
                             self.progress.emit(downloaded, total)
 
-            self.download_complete.emit(temp_path)
+            self.download_complete.emit(self.dest_path)
 
         except Exception as e:
             logger.error(f"Failed to download update: {e}")
+            Path(self.dest_path).unlink(missing_ok=True)
             self.error.emit(str(e))
 
 
@@ -145,6 +143,9 @@ class UpdateService(QObject):
         self._latest_version: Optional[str] = None
         self._download_url: Optional[str] = None
         self._update_path: Optional[str] = None
+        # Cache directory for downloaded updates
+        self._cache_dir = Path(tempfile.gettempdir()) / "sombra_updates"
+        self._cache_dir.mkdir(exist_ok=True)
 
     @property
     def current_version(self) -> str:
@@ -168,17 +169,28 @@ class UpdateService(QObject):
         logger.info(f"Update available: {ver}")
         self.update_available.emit(ver, notes)
 
+    def _get_cached_path(self, version: str) -> Path:
+        """Get path for cached update file."""
+        return self._cache_dir / f"sombra_update_{version}.zip"
+
     def download_update(self):
-        """Download the latest update."""
-        if not self._download_url:
+        """Download the latest update (or use cached version)."""
+        if not self._download_url or not self._latest_version:
             self.error.emit("No update URL available")
             return
 
         if self._downloader and self._downloader.isRunning():
             return
 
+        # Check if already downloaded
+        cached_path = self._get_cached_path(self._latest_version)
+        if cached_path.exists():
+            logger.info(f"Using cached update: {cached_path}")
+            self._on_download_complete(str(cached_path))
+            return
+
         logger.info(f"Starting download: {self._download_url}")
-        self._downloader = UpdateDownloader(self._download_url)
+        self._downloader = UpdateDownloader(self._download_url, str(cached_path))
         self._downloader.progress.connect(self.download_progress.emit)
         self._downloader.download_complete.connect(self._on_download_complete)
         self._downloader.error.connect(lambda e: self.error.emit(e))
