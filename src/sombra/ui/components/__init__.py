@@ -3,6 +3,7 @@
 from .voice_button import FluentVoiceButton
 from .chat_bubble import ChatBubble, ThinkingBubble
 from .status_card import ConnectionStatusCard, StatusCard
+from .chat_sidebar import ChatSidebar, ConversationItem
 
 __all__ = [
     "FluentVoiceButton",
@@ -10,4 +11,6 @@ __all__ = [
     "ThinkingBubble",
     "ConnectionStatusCard",
     "StatusCard",
+    "ChatSidebar",
+    "ConversationItem",
 ]

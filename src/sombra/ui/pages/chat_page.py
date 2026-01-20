@@ -1,8 +1,9 @@
-"""Chat page - main voice and text chat interface."""
+"""Chat page - main voice and text chat interface with history."""
 
+import logging
 import time
 
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, Slot, QTimer
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget,
@@ -27,6 +28,10 @@ from qfluentwidgets import (
 from ..components.voice_button import FluentVoiceButton
 from ..components.chat_bubble import ChatBubble, ThinkingBubble, StreamingBubble
 from ..components.status_card import ConnectionStatusCard
+from ..components.chat_sidebar import ChatSidebar
+
+from ...data.models import Conversation, Message
+from ...data.chat_repository import ChatRepository
 
 from ...services.audio_service import AudioService
 from ...services.whisper_service import WhisperService
@@ -35,15 +40,19 @@ from ...services.hotkey_service import HotkeyService
 from ...services.sound_service import SoundService
 from ...services.wakeword_service import WakeWordService
 
+logger = logging.getLogger(__name__)
 
-class ChatPage(ScrollArea):
-    """Main chat interface with voice input.
+
+class ChatPage(QWidget):
+    """Main chat interface with voice input and history.
 
     Combines:
+    - Collapsible sidebar with chat history
     - Voice button for recording
     - Text input for typing
     - Chat bubbles for messages
     - Connection status indicator
+    - SQLite persistence
     """
 
     def __init__(self, services: dict, parent: QWidget | None = None):
@@ -61,24 +70,48 @@ class ChatPage(ScrollArea):
         self._last_recording_end_time: float = 0
         self._wake_word_cooldown = 3.0
 
-        # Chat history
+        # Chat history (UI widgets)
         self._messages: list[QWidget] = []
+
+        # Database
+        self._repository = ChatRepository()
+        self._current_conversation: Conversation | None = None
+        self._pending_user_message: str | None = None
 
         self._setup_ui()
         self._connect_signals()
 
-        # Check connection
+        # Load conversations and check connection
+        self._load_conversations()
         self._sombra.check_connection_async()
 
     def _setup_ui(self) -> None:
-        """Build the chat interface."""
-        # Container widget
-        self.container = QWidget()
-        self.setWidget(self.container)
-        self.setWidgetResizable(True)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        """Build the chat interface with sidebar."""
+        # Main horizontal layout: sidebar + chat area
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
-        layout = QVBoxLayout(self.container)
+        # Sidebar (collapsible)
+        self._sidebar = ChatSidebar()
+        main_layout.addWidget(self._sidebar)
+
+        # Chat area
+        chat_widget = self._create_chat_area()
+        main_layout.addWidget(chat_widget, 1)
+
+    def _create_chat_area(self) -> QWidget:
+        """Create the main chat area (scrollable)."""
+        # Scroll area wrapper
+        scroll_area = ScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        # Container widget
+        container = QWidget()
+        scroll_area.setWidget(container)
+
+        layout = QVBoxLayout(container)
         layout.setContentsMargins(36, 20, 36, 20)
         layout.setSpacing(20)
 
@@ -111,11 +144,22 @@ class ChatPage(ScrollArea):
         input_section = self._create_input_section()
         layout.addWidget(input_section)
 
+        # Store scroll area reference for scrolling
+        self._scroll_area = scroll_area
+
+        return scroll_area
+
     def _create_header(self) -> QWidget:
         """Create header with title and actions."""
         widget = QWidget()
         layout = QHBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
+
+        # History toggle button
+        self._history_btn = TransparentToolButton(FluentIcon.MENU)
+        self._history_btn.setToolTip("Show history")
+        self._history_btn.clicked.connect(self._toggle_sidebar)
+        layout.addWidget(self._history_btn)
 
         # Title
         title = TitleLabel("Sombra Chat")
@@ -131,13 +175,13 @@ class ChatPage(ScrollArea):
         # Clear button
         clear_btn = TransparentToolButton(FluentIcon.DELETE)
         clear_btn.setToolTip("Clear chat")
-        clear_btn.clicked.connect(self._clear_chat)
+        clear_btn.clicked.connect(self._clear_current_chat)
         layout.addWidget(clear_btn)
 
-        # New session button
+        # New chat button
         new_btn = TransparentToolButton(FluentIcon.ADD)
-        new_btn.setToolTip("New session")
-        new_btn.clicked.connect(self._new_session)
+        new_btn.setToolTip("New chat")
+        new_btn.clicked.connect(self._new_conversation)
         layout.addWidget(new_btn)
 
         return widget
@@ -219,7 +263,152 @@ class ChatPage(ScrollArea):
             self._wakeword.wake_word_detected.connect(self._on_wake_word_detected)
             self._wakeword.error.connect(self._on_error)
 
-    # ===== Event Handlers =====
+        # Sidebar signals
+        self._sidebar.conversation_selected.connect(self._on_conversation_selected)
+        self._sidebar.new_conversation_requested.connect(self._new_conversation)
+        self._sidebar.conversation_renamed.connect(self._on_conversation_renamed)
+        self._sidebar.conversation_deleted.connect(self._on_conversation_deleted)
+        self._sidebar.toggle_requested.connect(self._toggle_sidebar)
+
+    # ===== History / Persistence =====
+
+    def _load_conversations(self) -> None:
+        """Load conversations from database."""
+        conversations = self._repository.list_conversations()
+        self._sidebar.set_conversations(conversations)
+
+        # Load most recent conversation if exists
+        if conversations:
+            self._load_conversation(conversations[0].id)
+
+    def _load_conversation(self, conversation_id: str) -> None:
+        """Load a conversation and display its messages."""
+        conv = self._repository.get_conversation(conversation_id)
+        if not conv:
+            return
+
+        self._current_conversation = conv
+        self._sidebar.set_active_conversation(conversation_id)
+
+        # Clear current UI
+        self._clear_chat_ui()
+
+        # Display messages
+        for msg in conv.messages:
+            bubble = ChatBubble(msg.content, is_user=(msg.role == "user"))
+            self._add_message_widget(bubble)
+
+    def _ensure_conversation(self) -> Conversation:
+        """Ensure a conversation exists, create if needed."""
+        if self._current_conversation is None:
+            from ...core.session import get_session_manager
+            session = get_session_manager()
+
+            self._current_conversation = self._repository.create_conversation(
+                session_id=session.session_id
+            )
+            self._load_conversations()
+            self._sidebar.set_active_conversation(self._current_conversation.id)
+
+        return self._current_conversation
+
+    def _generate_title(self, first_message: str) -> str:
+        """Generate title from first message."""
+        # First 50 chars or until newline
+        title = first_message[:50].split('\n')[0].strip()
+        if len(first_message) > 50:
+            title += "..."
+        return title
+
+    @Slot()
+    def _new_conversation(self) -> None:
+        """Start a new conversation."""
+        from ...core.session import get_session_manager
+
+        session = get_session_manager()
+        session.regenerate()
+
+        self._current_conversation = self._repository.create_conversation(
+            session_id=session.session_id
+        )
+
+        self._clear_chat_ui()
+        self._load_conversations()
+        self._sidebar.set_active_conversation(self._current_conversation.id)
+
+        self._status_label.setText("New chat started")
+        self._status_label.setStyleSheet("color: #888888;")
+
+    @Slot(str)
+    def _on_conversation_selected(self, conversation_id: str) -> None:
+        """Handle conversation selection from sidebar."""
+        if self._current_conversation and self._current_conversation.id == conversation_id:
+            return
+
+        self._load_conversation(conversation_id)
+
+        # Update session
+        if self._current_conversation:
+            from ...core.session import get_session_manager
+            session = get_session_manager()
+            session._session_id = self._current_conversation.session_id
+
+    @Slot(str, str)
+    def _on_conversation_renamed(self, conversation_id: str, new_title: str) -> None:
+        """Handle conversation rename."""
+        self._repository.update_conversation_title(conversation_id, new_title)
+        self._load_conversations()
+
+    @Slot(str)
+    def _on_conversation_deleted(self, conversation_id: str) -> None:
+        """Handle conversation deletion."""
+        self._repository.delete_conversation(conversation_id)
+
+        # If deleted current, clear and load another
+        if self._current_conversation and self._current_conversation.id == conversation_id:
+            self._current_conversation = None
+            self._clear_chat_ui()
+
+        self._load_conversations()
+
+    @Slot()
+    def _toggle_sidebar(self) -> None:
+        """Toggle sidebar visibility."""
+        self._sidebar.toggle()
+
+    @Slot()
+    def _clear_current_chat(self) -> None:
+        """Clear current chat (UI only, keeps history)."""
+        self._clear_chat_ui()
+        self._status_label.setText("Chat cleared")
+        self._status_label.setStyleSheet("color: #888888;")
+
+    def _clear_chat_ui(self) -> None:
+        """Clear chat UI widgets."""
+        for msg in self._messages:
+            msg.deleteLater()
+        self._messages.clear()
+
+        self._streaming_bubble.clear()
+        self._streaming_bubble.hide()
+
+    def _add_message_widget(self, bubble: QWidget) -> None:
+        """Add a message bubble widget to the chat."""
+        self._messages.append(bubble)
+
+        # Insert before the stretch
+        index = self._chat_layout.count() - 2  # Before stretch and streaming bubble
+        self._chat_layout.insertWidget(index, bubble)
+
+        # Scroll to bottom (delayed to ensure layout is updated)
+        QTimer.singleShot(50, self._scroll_to_bottom)
+
+    def _scroll_to_bottom(self) -> None:
+        """Scroll chat to bottom."""
+        scrollbar = self._scroll_area.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    # ===== Voice / Text Handlers =====
 
     @Slot()
     def _on_recording_started(self) -> None:
@@ -239,9 +428,6 @@ class ChatPage(ScrollArea):
     @Slot(bytes)
     def _on_audio_ready(self, audio_data: bytes) -> None:
         """Handle audio data ready for transcription."""
-        import logging
-        logger = logging.getLogger(__name__)
-
         SoundService.play_stop_sound()
 
         # Update UI
@@ -280,9 +466,26 @@ class ChatPage(ScrollArea):
 
     def _send_query(self, text: str) -> None:
         """Send query to Sombra."""
-        # Add user bubble
+        # Ensure conversation exists
+        conv = self._ensure_conversation()
+
+        # Save user message to DB
+        self._repository.add_message(conv.id, "user", text)
+        self._pending_user_message = text
+
+        # Check if this is first message (for auto-title)
+        messages = self._repository.get_messages(conv.id)
+        is_first_message = len(messages) == 1
+
+        # Auto-title on first message
+        if is_first_message and not conv.title:
+            title = self._generate_title(text)
+            self._repository.update_conversation_title(conv.id, title)
+            self._load_conversations()
+
+        # Add user bubble to UI
         user_bubble = ChatBubble(text, is_user=True)
-        self._add_message(user_bubble)
+        self._add_message_widget(user_bubble)
 
         # Clear input
         self._text_input.clear()
@@ -314,14 +517,20 @@ class ChatPage(ScrollArea):
     @Slot()
     def _on_stream_completed(self) -> None:
         """Handle stream completed."""
-        # Convert streaming bubble to permanent bubble
+        # Get response content
         content = self._streaming_bubble.get_content()
-        if content:
+
+        if content and self._current_conversation:
+            # Save assistant message to DB
+            self._repository.add_message(self._current_conversation.id, "assistant", content)
+
+            # Convert streaming bubble to permanent bubble
             sombra_bubble = ChatBubble(content, is_user=False)
-            self._add_message(sombra_bubble)
+            self._add_message_widget(sombra_bubble)
 
         self._streaming_bubble.hide()
         self._streaming_bubble.clear()
+        self._pending_user_message = None
 
         self._status_label.setText("Click to record, click again to send")
         self._status_label.setStyleSheet("color: #888888;")
@@ -342,13 +551,10 @@ class ChatPage(ScrollArea):
     @Slot()
     def _on_wake_word_detected(self) -> None:
         """Handle wake word detection."""
-        import logging
-        logger = logging.getLogger(__name__)
-
         # Check cooldown
         elapsed = time.time() - self._last_recording_end_time
         if elapsed < self._wake_word_cooldown:
-            logger.info(f"Wake word IGNORED (cooldown)")
+            logger.info("Wake word IGNORED (cooldown)")
             return
 
         if self._voice_button.is_recording:
@@ -361,37 +567,3 @@ class ChatPage(ScrollArea):
         self._status_label.setStyleSheet("color: #4ecca3;")
         self._audio.start_recording(auto_stop=True)
         self._voice_button.set_recording_state(True)
-
-    def _add_message(self, bubble: QWidget) -> None:
-        """Add a message bubble to the chat."""
-        self._messages.append(bubble)
-
-        # Insert before the stretch
-        index = self._chat_layout.count() - 2  # Before stretch and streaming bubble
-        self._chat_layout.insertWidget(index, bubble)
-
-        # Scroll to bottom
-        self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
-
-    @Slot()
-    def _clear_chat(self) -> None:
-        """Clear all chat messages."""
-        for msg in self._messages:
-            msg.deleteLater()
-        self._messages.clear()
-
-        self._streaming_bubble.clear()
-        self._streaming_bubble.hide()
-
-        self._status_label.setText("Chat cleared")
-        self._status_label.setStyleSheet("color: #888888;")
-
-    @Slot()
-    def _new_session(self) -> None:
-        """Start a new session."""
-        from ...core.session import get_session_manager
-
-        session = get_session_manager()
-        session.regenerate()
-        self._clear_chat()
-        self._status_label.setText("New session started")

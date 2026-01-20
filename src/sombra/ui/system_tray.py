@@ -4,6 +4,8 @@ from PySide6.QtCore import Signal
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon, QWidget
 
+from .main_window import get_app_icon
+
 
 class SystemTray(QSystemTrayIcon):
     """System tray integration.
@@ -29,9 +31,11 @@ class SystemTray(QSystemTrayIcon):
 
     def _setup_icon(self) -> None:
         """Setup tray icon."""
-        # Use a simple Unicode character as fallback
-        # In production, you'd use a proper icon file
-        self.setIcon(QIcon.fromTheme("audio-input-microphone"))
+        icon = get_app_icon()
+        if icon.isNull():
+            # Fallback to system icon
+            icon = QIcon.fromTheme("audio-input-microphone")
+        self.setIcon(icon)
         self.setToolTip("Sombra Desktop")
 
     def _setup_menu(self) -> None:

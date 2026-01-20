@@ -14,6 +14,7 @@ from .core.async_bridge import init_async_bridge
 from .core.events import init_event_hub
 from .core.session import init_session_manager
 from .config.settings import get_settings
+from .data.database import init_db, close_db
 from .services.audio_service import AudioService
 from .services.hotkey_service import HotkeyService
 from .services.sombra_service import SombraService
@@ -56,9 +57,13 @@ class SombraApp:
         self._app.setApplicationName("Sombra Desktop")
         self._app.setOrganizationName("Sombra")
         self._app.setApplicationVersion("1.1.0")
+        self._app.setDesktopFileName("sombra")  # Links to sombra.desktop for GNOME
 
         # Initialize settings
         init_settings()
+
+        # Initialize database
+        init_db()
 
         # Initialize core components
         init_event_hub()
@@ -103,6 +108,9 @@ class SombraApp:
 
     def shutdown(self) -> None:
         """Graceful shutdown of all services."""
+        # Close database
+        close_db()
+
         if self._wakeword_service:
             self._wakeword_service.cleanup()
 
