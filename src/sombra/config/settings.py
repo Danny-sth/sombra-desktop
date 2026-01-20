@@ -40,7 +40,8 @@ class Settings:
         self.sombra_api_url: str = os.getenv("SOMBRA_API_URL", "http://90.156.230.49:8080")
         self.sombra_session_id: str = os.getenv("SOMBRA_SESSION_ID", "owner")
 
-        # Whisper STT Service
+        # STT Service (ElevenLabs primary, local Whisper fallback)
+        self.elevenlabs_api_key: Optional[str] = os.getenv("ELEVENLABS_API_KEY")
         self.stt_url: str = os.getenv("STT_URL", "http://100.87.46.63:5000/transcribe")
 
         # UI Settings
@@ -65,7 +66,11 @@ class Settings:
         default_env = """# Sombra Desktop Configuration
 SOMBRA_API_URL=http://90.156.230.49:8080
 SOMBRA_SESSION_ID=owner
+
+# ElevenLabs STT (leave empty to use local Whisper)
+ELEVENLABS_API_KEY=
 STT_URL=http://100.87.46.63:5000/transcribe
+
 THEME=dark
 GLOBAL_HOTKEY=ctrl+shift+s
 """
