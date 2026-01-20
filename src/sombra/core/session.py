@@ -46,12 +46,19 @@ class SessionManager:
         return self._created_at
 
     def regenerate(self) -> str:
-        """Generate a new session ID.
+        """Reset session to configured ID from settings.
+
+        Unlike generating a new UUID, this uses the configured session_id
+        from settings to maintain owner status across conversations.
 
         Returns:
-            The new session ID.
+            The session ID (from settings or generated).
         """
-        self._session_id = self._generate_session_id()
+        settings = get_settings()
+        if settings.sombra_session_id:
+            self._session_id = settings.sombra_session_id
+        else:
+            self._session_id = self._generate_session_id()
         self._created_at = datetime.now()
         return self._session_id
 

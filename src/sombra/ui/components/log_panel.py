@@ -1,9 +1,9 @@
-"""Server log panel for dashboard - real-time SSE streaming."""
+"""Server log panel for dashboard - real-time SSE streaming with expand/collapse."""
 
 import json
 from datetime import datetime
 
-from PySide6.QtCore import Qt, Slot, QThread, Signal, QTimer
+from PySide6.QtCore import Qt, Slot, QThread, Signal, QPropertyAnimation, QEasingCurve
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel
 
 from qfluentwidgets import (
@@ -68,9 +68,15 @@ class SSELogWorker(QThread):
 
 
 class LogPanel(QFrame):
-    """Compact server log panel for dashboard with SSE streaming."""
+    """Server log panel for dashboard with SSE streaming and expand/collapse."""
 
     MAX_LOGS = 500  # Max logs to keep in display
+
+    # Height settings
+    COLLAPSED_MIN = 150
+    COLLAPSED_MAX = 200
+    EXPANDED_MIN = 400
+    EXPANDED_MAX = 600
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -79,6 +85,7 @@ class LogPanel(QFrame):
         self._worker: SSELogWorker | None = None
         self._autoscroll = True
         self._log_count = 0
+        self._expanded = False
 
         # Server URL from settings
         settings = get_settings()
@@ -108,8 +115,8 @@ class LogPanel(QFrame):
         self._log_display = TextEdit()
         self._log_display.setReadOnly(True)
         self._log_display.setPlaceholderText("Server logs will appear here...")
-        self._log_display.setMinimumHeight(150)
-        self._log_display.setMaximumHeight(250)
+        self._log_display.setMinimumHeight(self.COLLAPSED_MIN)
+        self._log_display.setMaximumHeight(self.COLLAPSED_MAX)
 
         # Monospace font
         self._log_display.setStyleSheet("""
@@ -160,6 +167,15 @@ class LogPanel(QFrame):
         clear_btn.clicked.connect(self._clear_logs)
         layout.addWidget(clear_btn)
 
+        # Expand/Collapse button
+        self._expand_btn = TransparentToolButton(FluentIcon.FULL_SCREEN)
+        self._expand_btn.setToolTip("Expand")
+        self._expand_btn.installEventFilter(
+            ToolTipFilter(self._expand_btn, 500, ToolTipPosition.BOTTOM)
+        )
+        self._expand_btn.clicked.connect(self._toggle_expand)
+        layout.addWidget(self._expand_btn)
+
         # Connect/Disconnect button
         self._connect_btn = TransparentToolButton(FluentIcon.PLAY)
         self._connect_btn.setToolTip("Connect")
@@ -185,6 +201,27 @@ class LogPanel(QFrame):
                 border-radius: 5px;
             }}
         """)
+
+    @Slot()
+    def _toggle_expand(self) -> None:
+        """Toggle expanded/collapsed state."""
+        self._expanded = not self._expanded
+
+        if self._expanded:
+            self._log_display.setMinimumHeight(self.EXPANDED_MIN)
+            self._log_display.setMaximumHeight(self.EXPANDED_MAX)
+            self._expand_btn.setIcon(FluentIcon.BACK_TO_WINDOW)
+            self._expand_btn.setToolTip("Collapse")
+        else:
+            self._log_display.setMinimumHeight(self.COLLAPSED_MIN)
+            self._log_display.setMaximumHeight(self.COLLAPSED_MAX)
+            self._expand_btn.setIcon(FluentIcon.FULL_SCREEN)
+            self._expand_btn.setToolTip("Expand")
+
+        # Scroll to bottom if autoscroll enabled
+        if self._autoscroll:
+            scrollbar = self._log_display.verticalScrollBar()
+            scrollbar.setValue(scrollbar.maximum())
 
     @Slot()
     def _toggle_stream(self) -> None:

@@ -29,6 +29,7 @@ from ..components.voice_button import FluentVoiceButton
 from ..components.chat_bubble import ChatBubble, ThinkingBubble, StreamingBubble
 from ..components.status_card import ConnectionStatusCard
 from ..components.chat_sidebar import ChatSidebar
+from ..styles.theme import SciFiTheme
 
 from ...data.models import Conversation, Message
 from ...data.chat_repository import ChatRepository
@@ -108,19 +109,29 @@ class ChatPage(QWidget):
         main_layout.addWidget(chat_widget, 1)
 
     def _create_chat_area(self) -> QWidget:
-        """Create the main chat area (scrollable)."""
+        """Create the main chat area (scrollable) with Sci-Fi styling."""
         # Scroll area wrapper
         scroll_area = ScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        # Container widget
+        # Container widget with gradient background
         container = QWidget()
+        container.setObjectName("chatContainer")
+        container.setStyleSheet(f"""
+            QWidget#chatContainer {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {SciFiTheme.BG_DARK},
+                    stop:0.3 {SciFiTheme.BG_PANEL},
+                    stop:0.7 {SciFiTheme.BG_PANEL},
+                    stop:1 {SciFiTheme.BG_DARK});
+            }}
+        """)
         scroll_area.setWidget(container)
 
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(36, 20, 36, 20)
-        layout.setSpacing(20)
+        layout.setContentsMargins(40, 24, 40, 24)
+        layout.setSpacing(16)
 
         # Header
         header = self._create_header()
@@ -217,23 +228,40 @@ class ChatPage(QWidget):
         return widget
 
     def _create_input_section(self) -> QWidget:
-        """Create text input with send button."""
+        """Create text input with send button and Sci-Fi styling."""
         widget = QWidget()
         layout = QHBoxLayout(widget)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 8, 0, 0)
         layout.setSpacing(12)
 
-        # Text input
+        # Text input with Sci-Fi styling
         self._text_input = LineEdit()
         self._text_input.setPlaceholderText("Type a message...")
         self._text_input.setClearButtonEnabled(True)
         self._text_input.returnPressed.connect(self._on_text_submitted)
+        self._text_input.setStyleSheet(SciFiTheme.INPUT_FIELD)
         layout.addWidget(self._text_input, 1)
 
-        # Send button
+        # Send button with accent color
         self._send_btn = PrimaryPushButton("Send")
-        self._send_btn.setFixedWidth(80)
+        self._send_btn.setFixedWidth(90)
         self._send_btn.clicked.connect(self._on_text_submitted)
+        self._send_btn.setStyleSheet(f"""
+            PrimaryPushButton {{
+                background-color: {SciFiTheme.CYAN};
+                border: none;
+                border-radius: 8px;
+                padding: 10px 16px;
+                color: #0a0a12;
+                font-weight: 600;
+            }}
+            PrimaryPushButton:hover {{
+                background-color: {SciFiTheme.DARK_CYAN};
+            }}
+            PrimaryPushButton:pressed {{
+                background-color: #007a99;
+            }}
+        """)
         layout.addWidget(self._send_btn)
 
         return widget

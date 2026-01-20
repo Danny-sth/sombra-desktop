@@ -164,12 +164,6 @@ class HomePage(ScrollArea):
         new_session_btn.clicked.connect(self._on_new_session)
         actions_layout.addWidget(new_session_btn)
 
-        # View Logs button
-        logs_btn = TransparentPushButton("View Logs")
-        logs_btn.setIcon(FluentIcon.DOCUMENT)
-        logs_btn.clicked.connect(self._on_view_logs)
-        actions_layout.addWidget(logs_btn)
-
         actions_layout.addStretch()
         parent_layout.addLayout(actions_layout)
 
@@ -230,13 +224,6 @@ class HomePage(ScrollArea):
         status_label = self._session_card.findChild(CaptionLabel, "session_status")
         if status_label:
             status_label.setText("New session started")
-
-    @Slot()
-    def _on_view_logs(self) -> None:
-        """Navigate to logs page."""
-        window = self.window()
-        if hasattr(window, "switchTo"):
-            window.switchTo(window.logs_page)
 
     # ===== Public Methods =====
 
