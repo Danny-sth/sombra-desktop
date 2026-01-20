@@ -271,7 +271,6 @@ class UpdateService(QObject):
 
         if needs_admin:
             # Script with self-elevation for Program Files
-            # Key trick: Windows allows RENAMING a running exe, just not deleting it
             script = f'''@echo off
 chcp 65001 >nul
 
@@ -288,34 +287,38 @@ echo ============================
 echo.
 
 :: Step 1: Rename running exe (Windows allows this!)
-echo [1/5] Renaming old executable...
+echo [1/6] Renaming old executable...
 del "{dest_path}\\Sombra_old.exe" 2>nul
 if exist "{exe_path}" ren "{exe_path}" Sombra_old.exe
 
 :: Step 2: Kill process
-echo [2/5] Stopping Sombra...
+echo [2/6] Stopping Sombra...
 taskkill /f /im Sombra.exe >nul 2>&1
 taskkill /f /im Sombra_old.exe >nul 2>&1
 timeout /t 2 /nobreak >nul
 
-:: Step 3: Clean up old files
-echo [3/5] Removing old files...
-rd /s /q "{dest_path}\\_internal" 2>nul
-del "{dest_path}\\Sombra_old.exe" 2>nul
+:: Step 3: Extract to temp folder first
+echo [3/6] Extracting to temp...
+rd /s /q "{temp_extract}" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{temp_extract}' -Force"
 
-:: Step 4: Extract new version directly
-echo [4/5] Installing update...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
-
-if not exist "{exe_path}" (
-    echo.
-    echo ERROR: Update failed!
+if not exist "{temp_extract}\\Sombra.exe" (
+    echo ERROR: Extraction failed!
     pause
     exit /b 1
 )
 
-:: Step 5: Launch
-echo [5/5] Starting Sombra...
+:: Step 4: Use robocopy to mirror (handles read-only, retries)
+echo [4/6] Installing files...
+robocopy "{temp_extract}" "{dest_path}" /MIR /R:3 /W:1 /NP /NFL /NDL /NJH /NJS >nul
+
+:: Step 5: Cleanup
+echo [5/6] Cleaning up...
+del "{dest_path}\\Sombra_old.exe" 2>nul
+rd /s /q "{temp_extract}" 2>nul
+
+:: Step 6: Launch
+echo [6/6] Starting Sombra...
 start "" "{exe_path}"
 
 del "{zip_path}" 2>nul
@@ -330,30 +333,33 @@ echo Sombra Update Script
 echo ====================
 echo.
 
-echo [1/5] Renaming old executable...
+echo [1/6] Renaming old executable...
 del "{dest_path}\\Sombra_old.exe" 2>nul
 if exist "{exe_path}" ren "{exe_path}" Sombra_old.exe
 
-echo [2/5] Stopping Sombra...
+echo [2/6] Stopping Sombra...
 taskkill /f /im Sombra.exe >nul 2>&1
 taskkill /f /im Sombra_old.exe >nul 2>&1
 timeout /t 2 /nobreak >nul
 
-echo [3/5] Removing old files...
-rd /s /q "{dest_path}\\_internal" 2>nul
-del "{dest_path}\\Sombra_old.exe" 2>nul
+echo [3/6] Extracting to temp...
+rd /s /q "{temp_extract}" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{temp_extract}' -Force"
 
-echo [4/5] Installing update...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
-
-if not exist "{exe_path}" (
-    echo.
-    echo ERROR: Update failed!
+if not exist "{temp_extract}\\Sombra.exe" (
+    echo ERROR: Extraction failed!
     pause
     exit /b 1
 )
 
-echo [5/5] Starting Sombra...
+echo [4/6] Installing files...
+robocopy "{temp_extract}" "{dest_path}" /MIR /R:3 /W:1 /NP /NFL /NDL /NJH /NJS >nul
+
+echo [5/6] Cleaning up...
+del "{dest_path}\\Sombra_old.exe" 2>nul
+rd /s /q "{temp_extract}" 2>nul
+
+echo [6/6] Starting Sombra...
 start "" "{exe_path}"
 
 del "{zip_path}" 2>nul
