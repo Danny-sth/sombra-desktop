@@ -55,17 +55,34 @@ class UpdateChecker(QThread):
 
             if latest > current:
                 logger.info(f"Update available: {current} -> {latest}")
-                # Find zip asset (portable or any zip)
+                # Find correct asset for platform
                 download_url = None
+                is_linux = sys.platform != "win32"
+
                 for asset in data.get("assets", []):
                     name = asset.get("name", "")
                     logger.debug(f"Asset: {name}")
-                    # Prefer Portable, but accept any zip
-                    if name.endswith(".zip"):
-                        download_url = asset.get("browser_download_url")
-                        logger.info(f"Found update zip: {name}")
-                        if "Portable" in name:
-                            break  # Prefer portable, stop searching
+
+                    if is_linux:
+                        # Linux: prefer Linux-Source zip, or use git pull
+                        if "Linux" in name and name.endswith(".zip"):
+                            download_url = asset.get("browser_download_url")
+                            logger.info(f"Found Linux update: {name}")
+                            break
+                    else:
+                        # Windows: prefer Portable zip
+                        if "Portable" in name and name.endswith(".zip"):
+                            download_url = asset.get("browser_download_url")
+                            logger.info(f"Found Windows update: {name}")
+                            break
+
+                # Fallback: On Linux with git, we don't need download URL
+                if is_linux and not download_url:
+                    project_dir = Path(__file__).parent.parent.parent.parent
+                    if (project_dir / ".git").exists():
+                        logger.info("Linux git repo - will use git pull for update")
+                        # Use dummy URL to signal update available
+                        download_url = "git-pull"
 
                 if download_url:
                     release_notes = data.get("body", "")
@@ -182,6 +199,13 @@ class UpdateService(QObject):
         if self._downloader and self._downloader.isRunning():
             return
 
+        # Git-based update doesn't need download
+        if self._download_url == "git-pull":
+            logger.info("Git-based update - no download needed")
+            self._update_path = "git-pull"
+            self.update_ready.emit("git-pull")
+            return
+
         # Check if already downloaded
         cached_path = self._get_cached_path(self._latest_version)
         if cached_path.exists():
@@ -210,26 +234,29 @@ class UpdateService(QObject):
         """
         logger.info(f"Applying update from: {self._update_path}")
 
-        if not self._update_path or not os.path.exists(self._update_path):
-            logger.error("Update file not found")
+        if not self._update_path:
+            logger.error("Update path not set")
             self.error.emit("Update file not found")
             return False
 
-        if not getattr(sys, 'frozen', False):
-            logger.warning("Cannot apply update in development mode")
-            self.error.emit("Обновление недоступно в режиме разработки")
-            return False
-
         try:
-            # Get current executable directory
-            exe_path = Path(sys.executable)
-            app_dir = exe_path.parent
-
-            # Create update script
             if sys.platform == "win32":
+                # Windows requires frozen executable
+                if not getattr(sys, 'frozen', False):
+                    logger.warning("Cannot apply update in development mode")
+                    self.error.emit("Обновление недоступно в режиме разработки")
+                    return False
+
+                if not os.path.exists(self._update_path):
+                    self.error.emit("Update file not found")
+                    return False
+
+                exe_path = Path(sys.executable)
+                app_dir = exe_path.parent
                 return self._apply_update_windows(app_dir)
             else:
-                return self._apply_update_linux(app_dir)
+                # Linux - source-based update (git pull or zip)
+                return self._apply_update_linux_source()
 
         except Exception as e:
             logger.error(f"Failed to apply update: {e}")
@@ -390,34 +417,162 @@ del "%~f0"
         threading.Thread(target=force_exit, daemon=True).start()
         return True
 
-    def _apply_update_linux(self, app_dir: Path) -> bool:
-        """Apply update on Linux."""
-        # Create shell script
+    def _apply_update_linux_source(self) -> bool:
+        """Apply source-based update on Linux (git pull or zip extraction)."""
+        # Determine project directory
+        project_dir = Path(__file__).parent.parent.parent.parent
+        logger.info(f"Linux update - project dir: {project_dir}")
+
+        # If git repo exists, use git pull
+        if (project_dir / ".git").exists():
+            return self._git_pull_update(project_dir)
+
+        # Otherwise, extract zip
+        if self._update_path and self._update_path != "git-pull":
+            return self._zip_extract_update(project_dir)
+
+        self.error.emit("No update method available")
+        return False
+
+    def _git_pull_update(self, project_dir: Path) -> bool:
+        """Update via git pull."""
+        logger.info(f"Git pull update in: {project_dir}")
+
+        # Find venv activate path
+        venv_activate = project_dir / ".venv" / "bin" / "activate"
+
         script = f'''#!/bin/bash
+echo ""
+echo "=============================="
+echo "  Sombra Linux Auto-Update"
+echo "=============================="
+echo ""
+
+# Wait for app to close
 sleep 2
 
-echo "Extracting update..."
-unzip -o "{self._update_path}" -d "{app_dir.parent}"
+cd "{project_dir}"
 
-echo "Starting Sombra..."
-"{app_dir / 'Sombra'}" &
+echo "[1/3] Pulling updates from GitHub..."
+git fetch origin
+git reset --hard origin/master
+echo "Done."
 
-echo "Cleaning up..."
+echo ""
+echo "[2/3] Updating dependencies..."
+if [ -f "{venv_activate}" ]; then
+    source "{venv_activate}"
+fi
+pip install -e . -q 2>/dev/null || pip install -e .
+echo "Done."
+
+echo ""
+echo "[3/3] Restarting Sombra..."
+cd "{project_dir}"
+if [ -f "{venv_activate}" ]; then
+    source "{venv_activate}"
+fi
+nohup python -m sombra > /dev/null 2>&1 &
+echo "Started."
+
+echo ""
+echo "Update complete!"
+sleep 2
+
+# Cleanup
+rm "$0"
+'''
+        return self._run_linux_script(script)
+
+    def _zip_extract_update(self, project_dir: Path) -> bool:
+        """Update via zip extraction."""
+        logger.info(f"Zip extract update to: {project_dir}")
+
+        venv_activate = project_dir / ".venv" / "bin" / "activate"
+
+        script = f'''#!/bin/bash
+echo ""
+echo "=============================="
+echo "  Sombra Linux Auto-Update"
+echo "=============================="
+echo ""
+
+sleep 2
+
+echo "[1/3] Extracting update..."
+unzip -o "{self._update_path}" -d "{project_dir}"
+echo "Done."
+
+echo ""
+echo "[2/3] Updating dependencies..."
+cd "{project_dir}"
+if [ -f "{venv_activate}" ]; then
+    source "{venv_activate}"
+fi
+pip install -e . -q 2>/dev/null || pip install -e .
+echo "Done."
+
+echo ""
+echo "[3/3] Restarting Sombra..."
+if [ -f "{venv_activate}" ]; then
+    source "{venv_activate}"
+fi
+nohup python -m sombra > /dev/null 2>&1 &
+echo "Started."
+
+echo ""
+echo "Update complete!"
+sleep 2
+
+# Cleanup
 rm "{self._update_path}"
 rm "$0"
 '''
+        return self._run_linux_script(script)
+
+    def _run_linux_script(self, script: str) -> bool:
+        """Run update script in new terminal and exit app."""
         script_path = Path(tempfile.gettempdir()) / "sombra_update.sh"
         script_path.write_text(script)
         os.chmod(script_path, 0o755)
 
-        # Run script detached
-        subprocess.Popen(
-            [str(script_path)],
-            start_new_session=True,
-            close_fds=True
-        )
+        logger.info(f"Running update script: {script_path}")
+
+        # Try to run in a visible terminal
+        terminals = [
+            ["gnome-terminal", "--", "bash", str(script_path)],
+            ["konsole", "-e", "bash", str(script_path)],
+            ["xfce4-terminal", "-e", f"bash {script_path}"],
+            ["xterm", "-e", f"bash {script_path}"],
+        ]
+
+        launched = False
+        for term_cmd in terminals:
+            try:
+                subprocess.Popen(
+                    term_cmd,
+                    start_new_session=True,
+                    close_fds=True
+                )
+                logger.info(f"Launched update in terminal: {term_cmd[0]}")
+                launched = True
+                break
+            except FileNotFoundError:
+                continue
+
+        # Fallback: run in background without terminal
+        if not launched:
+            logger.info("No terminal found, running in background")
+            subprocess.Popen(
+                ["bash", str(script_path)],
+                start_new_session=True,
+                close_fds=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
 
         # Exit application
+        logger.info("Exiting application for update...")
         from PySide6.QtWidgets import QApplication
         QApplication.quit()
         return True

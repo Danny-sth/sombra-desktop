@@ -39,6 +39,7 @@ from ...services.sombra_service import SombraService
 from ...services.hotkey_service import HotkeyService
 from ...services.sound_service import SoundService
 from ...services.wakeword_service import WakeWordService
+from ...services.tts_service import TtsService
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,11 @@ class ChatPage(QWidget):
         self._sombra: SombraService = services["sombra"]
         self._hotkey: HotkeyService = services["hotkey"]
         self._wakeword: WakeWordService | None = services.get("wakeword")
+
+        # TTS service
+        self._tts = TtsService()
+        self._tts.audio_ready.connect(self._on_tts_audio_ready)
+        self._tts.synthesis_error.connect(self._on_tts_error)
 
         # Wake word cooldown
         self._last_recording_end_time: float = 0
@@ -296,6 +302,9 @@ class ChatPage(QWidget):
         # Display messages
         for msg in conv.messages:
             bubble = ChatBubble(msg.content, is_user=(msg.role == "user"))
+            # Connect play button for Sombra messages
+            if msg.role == "assistant":
+                bubble.play_requested.connect(self._on_replay_requested)
             self._add_message_widget(bubble)
 
     def _ensure_conversation(self) -> Conversation:
@@ -413,6 +422,9 @@ class ChatPage(QWidget):
     @Slot()
     def _on_recording_started(self) -> None:
         """Handle recording start."""
+        # Stop any TTS playback (barge-in)
+        SoundService.stop_playback()
+
         SoundService.play_start_sound()
         self._audio.start_recording()
         self._status_label.setText("Listening...")
@@ -526,7 +538,12 @@ class ChatPage(QWidget):
 
             # Convert streaming bubble to permanent bubble
             sombra_bubble = ChatBubble(content, is_user=False)
+            sombra_bubble.play_requested.connect(self._on_replay_requested)
             self._add_message_widget(sombra_bubble)
+
+            # Synthesize and play response
+            if self._tts.is_enabled:
+                self._tts.synthesize_async(content)
 
         self._streaming_bubble.hide()
         self._streaming_bubble.clear()
@@ -534,6 +551,23 @@ class ChatPage(QWidget):
 
         self._status_label.setText("Click to record, click again to send")
         self._status_label.setStyleSheet("color: #888888;")
+
+    @Slot(bytes)
+    def _on_tts_audio_ready(self, audio: bytes) -> None:
+        """Handle TTS audio ready - play it."""
+        logger.info(f"TTS audio ready: {len(audio)} bytes")
+        SoundService.play_audio(audio)
+
+    @Slot(str)
+    def _on_tts_error(self, error: str) -> None:
+        """Handle TTS error."""
+        logger.error(f"TTS error: {error}")
+
+    @Slot(str)
+    def _on_replay_requested(self, text: str) -> None:
+        """Handle replay button click - re-synthesize TTS."""
+        if self._tts.is_enabled:
+            self._tts.synthesize_async(text)
 
     @Slot(str)
     def _on_error(self, error: str) -> None:

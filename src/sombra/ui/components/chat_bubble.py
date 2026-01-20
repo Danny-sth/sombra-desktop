@@ -3,11 +3,11 @@
 import re
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QTextCursor
 from PySide6.QtWidgets import QVBoxLayout, QWidget, QTextBrowser, QLabel, QHBoxLayout
 
-from qfluentwidgets import CardWidget, BodyLabel, CaptionLabel, isDarkTheme
+from qfluentwidgets import CardWidget, BodyLabel, CaptionLabel, isDarkTheme, TransparentToolButton, FluentIcon
 
 try:
     import markdown
@@ -25,6 +25,9 @@ class ChatBubble(CardWidget):
 
     Supports markdown rendering and syntax highlighting.
     """
+
+    # Signal emitted when play button is clicked (sends content text)
+    play_requested = Signal(str)
 
     def __init__(
         self,
@@ -46,6 +49,11 @@ class ChatBubble(CardWidget):
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(8)
 
+        # Header row with role label and play button
+        header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(8)
+
         # Role label
         role_text = "You" if self._is_user else "Sombra"
         self._role_label = CaptionLabel(role_text)
@@ -54,7 +62,18 @@ class ChatBubble(CardWidget):
         role_color = QColor("#e94560") if self._is_user else QColor("#4ecca3")
         self._role_label.setStyleSheet(f"color: {role_color.name()};")
 
-        layout.addWidget(self._role_label)
+        header_layout.addWidget(self._role_label)
+        header_layout.addStretch()
+
+        # Play button (only for Sombra messages)
+        if not self._is_user:
+            self._play_button = TransparentToolButton(FluentIcon.VOLUME)
+            self._play_button.setFixedSize(24, 24)
+            self._play_button.setToolTip("Play audio")
+            self._play_button.clicked.connect(self._on_play_clicked)
+            header_layout.addWidget(self._play_button)
+
+        layout.addLayout(header_layout)
 
         # Content browser (for markdown)
         self._content_browser = QTextBrowser()
@@ -185,6 +204,11 @@ class ChatBubble(CardWidget):
         """Append content for streaming."""
         self._content += chunk
         self._render_content()
+
+    def _on_play_clicked(self) -> None:
+        """Handle play button click."""
+        if self._content:
+            self.play_requested.emit(self._content)
 
 
 class ThinkingBubble(CardWidget):
