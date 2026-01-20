@@ -281,11 +281,23 @@ del "%~f0"
 
         logger.info(f"Update script created: {script_path}")
 
-        # Run script in visible console so user can see progress
-        subprocess.Popen(
-            ["cmd", "/c", str(script_path)],
-            creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.CREATE_NEW_PROCESS_GROUP,
-        )
+        # Check if installed in Program Files (needs admin rights)
+        needs_admin = "program files" in str(app_dir).lower()
+
+        if needs_admin:
+            # Run with UAC elevation via PowerShell
+            logger.info("App in Program Files - requesting admin rights")
+            ps_cmd = f'Start-Process cmd -ArgumentList "/c","{script_path}" -Verb RunAs'
+            subprocess.Popen(
+                ["powershell", "-NoProfile", "-Command", ps_cmd],
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+        else:
+            # Run script in visible console
+            subprocess.Popen(
+                ["cmd", "/c", str(script_path)],
+                creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.CREATE_NEW_PROCESS_GROUP,
+            )
 
         logger.info("Update script launched, exiting application...")
 
