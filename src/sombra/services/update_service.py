@@ -230,14 +230,56 @@ class UpdateService(QObject):
 
         # Convert paths to proper Windows format
         zip_path = str(self._update_path).replace('/', '\\')
-        # Extract directly to app_dir (where Sombra.exe lives), not parent!
+        # Extract directly to app_dir (where Sombra.exe lives)
         dest_path = str(app_dir).replace('/', '\\')
         exe_path = str(app_dir / 'Sombra.exe').replace('/', '\\')
 
         logger.info(f"Update paths - zip: {zip_path}, dest: {dest_path}, exe: {exe_path}")
 
-        # Create batch script - simple delay approach (most reliable)
-        script = f'''@echo off
+        # Check if needs admin rights
+        needs_admin = "program files" in str(app_dir).lower()
+
+        if needs_admin:
+            # Script with self-elevation for Program Files
+            script = f'''@echo off
+chcp 65001 >nul
+
+:: Check for admin rights
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    echo Requesting administrator privileges...
+    powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    exit /b
+)
+
+echo Sombra Update Script (Admin)
+echo ============================
+echo.
+echo Waiting for Sombra to close...
+timeout /t 3 /nobreak >nul
+
+echo.
+echo Extracting update to: {dest_path}
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
+
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Extraction failed!
+    pause
+    exit /b 1
+)
+
+echo.
+echo Update installed! Starting Sombra...
+timeout /t 1 /nobreak >nul
+start "" "{exe_path}"
+
+del "{zip_path}" 2>nul
+timeout /t 2 /nobreak >nul
+del "%~f0"
+'''
+        else:
+            # Simple script without elevation
+            script = f'''@echo off
 chcp 65001 >nul
 echo Sombra Update Script
 echo ====================
@@ -246,58 +288,34 @@ echo Waiting for Sombra to close...
 timeout /t 3 /nobreak >nul
 
 echo.
-echo Extracting update from:
-echo {zip_path}
-echo To:
-echo {dest_path}
-echo.
-
+echo Extracting update to: {dest_path}
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
 
 if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo ERROR: Update extraction failed!
-    echo Error code: %ERRORLEVEL%
+    echo ERROR: Extraction failed!
     pause
     exit /b 1
 )
 
 echo.
-echo Update extracted successfully!
-echo Starting Sombra...
+echo Update installed! Starting Sombra...
 timeout /t 1 /nobreak >nul
-
 start "" "{exe_path}"
 
-echo.
-echo Cleaning up...
 del "{zip_path}" 2>nul
-echo Done!
 timeout /t 2 /nobreak >nul
 del "%~f0"
 '''
         script_path = Path(tempfile.gettempdir()) / "sombra_update.bat"
         script_path.write_text(script, encoding="utf-8")
 
-        logger.info(f"Update script created: {script_path}")
+        logger.info(f"Update script created: {script_path}, needs_admin={needs_admin}")
 
-        # Check if installed in Program Files (needs admin rights)
-        needs_admin = "program files" in str(app_dir).lower()
-
-        if needs_admin:
-            # Run with UAC elevation via PowerShell
-            logger.info("App in Program Files - requesting admin rights")
-            ps_cmd = f'Start-Process cmd -ArgumentList "/c","{script_path}" -Verb RunAs'
-            subprocess.Popen(
-                ["powershell", "-NoProfile", "-Command", ps_cmd],
-                creationflags=subprocess.CREATE_NO_WINDOW,
-            )
-        else:
-            # Run script in visible console
-            subprocess.Popen(
-                ["cmd", "/c", str(script_path)],
-                creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.CREATE_NEW_PROCESS_GROUP,
-            )
+        # Run script
+        subprocess.Popen(
+            ["cmd", "/c", str(script_path)],
+            creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.CREATE_NEW_PROCESS_GROUP,
+        )
 
         logger.info("Update script launched, exiting application...")
 
