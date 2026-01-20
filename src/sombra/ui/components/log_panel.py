@@ -249,8 +249,14 @@ class LogPanel(QFrame):
         else:
             time_str = datetime.now().strftime("%H:%M:%S")
 
-        # Shorten client_id
-        short_client = client_id.split("-")[0] if "-" in client_id else client_id[:6]
+        # Shorten client_id and determine if server log
+        is_server = client_id == "server"
+        if is_server:
+            short_client = "SRV"
+            client_color = "#E91E63"  # Pink for server
+        else:
+            short_client = client_id.split("-")[0] if "-" in client_id else client_id[:6]
+            client_color = "#888888"  # Gray for desktop clients
 
         # Shorten logger name
         short_logger = logger.split(".")[-1] if "." in logger else logger
@@ -268,7 +274,7 @@ class LogPanel(QFrame):
         # Format with HTML color
         formatted = (
             f'<span style="color: #666666;">[{time_str}]</span> '
-            f'<span style="color: #888888;">[{short_client}]</span> '
+            f'<span style="color: {client_color};">[{short_client}]</span> '
             f'<span style="color: {color};">[{level}]</span> '
             f'<span style="color: #AAAAAA;">{short_logger}:</span> '
             f'{message}'
