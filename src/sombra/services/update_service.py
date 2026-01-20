@@ -254,6 +254,9 @@ class UpdateService(QObject):
         # Check if needs admin rights
         needs_admin = "program files" in dest_path.lower()
 
+        # Temp extraction folder
+        temp_extract = str(Path(tempfile.gettempdir()) / "sombra_update_extract").replace('/', '\\')
+
         if needs_admin:
             # Script with self-elevation for Program Files
             script = f'''@echo off
@@ -272,20 +275,26 @@ echo ============================
 echo.
 echo Killing Sombra process...
 taskkill /f /im Sombra.exe >nul 2>&1
-timeout /t 2 /nobreak >nul
+timeout /t 3 /nobreak >nul
 
 echo.
-echo Extracting update to: {dest_path}
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
+echo Extracting to temp folder...
+rd /s /q "{temp_extract}" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{temp_extract}' -Force"
 
-if %ERRORLEVEL% NEQ 0 (
+if not exist "{temp_extract}\\Sombra.exe" (
     echo ERROR: Extraction failed!
     pause
     exit /b 1
 )
 
 echo.
+echo Copying files to: {dest_path}
+xcopy "{temp_extract}\\*" "{dest_path}\\" /E /Y /R /H /C >nul
+
+echo.
 echo Update installed! Starting Sombra...
+rd /s /q "{temp_extract}" 2>nul
 timeout /t 1 /nobreak >nul
 start "" "{exe_path}"
 
@@ -302,20 +311,26 @@ echo ====================
 echo.
 echo Killing Sombra process...
 taskkill /f /im Sombra.exe >nul 2>&1
-timeout /t 2 /nobreak >nul
+timeout /t 3 /nobreak >nul
 
 echo.
-echo Extracting update to: {dest_path}
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
+echo Extracting to temp folder...
+rd /s /q "{temp_extract}" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{temp_extract}' -Force"
 
-if %ERRORLEVEL% NEQ 0 (
+if not exist "{temp_extract}\\Sombra.exe" (
     echo ERROR: Extraction failed!
     pause
     exit /b 1
 )
 
 echo.
+echo Copying files to: {dest_path}
+xcopy "{temp_extract}\\*" "{dest_path}\\" /E /Y /R /H /C >nul
+
+echo.
 echo Update installed! Starting Sombra...
+rd /s /q "{temp_extract}" 2>nul
 timeout /t 1 /nobreak >nul
 start "" "{exe_path}"
 
