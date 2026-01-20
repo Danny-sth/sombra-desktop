@@ -28,6 +28,8 @@ class ChatBubble(CardWidget):
 
     # Signal emitted when play button is clicked (sends content text)
     play_requested = Signal(str)
+    # Signal emitted when stop button is clicked
+    stop_requested = Signal()
 
     def __init__(
         self,
@@ -65,13 +67,19 @@ class ChatBubble(CardWidget):
         header_layout.addWidget(self._role_label)
         header_layout.addStretch()
 
-        # Play button (only for Sombra messages)
+        # Play/Stop buttons (only for Sombra messages)
         if not self._is_user:
             self._play_button = TransparentToolButton(FluentIcon.VOLUME)
             self._play_button.setFixedSize(24, 24)
             self._play_button.setToolTip("Play audio")
             self._play_button.clicked.connect(self._on_play_clicked)
             header_layout.addWidget(self._play_button)
+
+            self._stop_button = TransparentToolButton(FluentIcon.PAUSE)
+            self._stop_button.setFixedSize(24, 24)
+            self._stop_button.setToolTip("Stop audio")
+            self._stop_button.clicked.connect(self._on_stop_clicked)
+            header_layout.addWidget(self._stop_button)
 
         layout.addLayout(header_layout)
 
@@ -209,6 +217,10 @@ class ChatBubble(CardWidget):
         """Handle play button click."""
         if self._content:
             self.play_requested.emit(self._content)
+
+    def _on_stop_clicked(self) -> None:
+        """Handle stop button click."""
+        self.stop_requested.emit()
 
 
 class ThinkingBubble(CardWidget):

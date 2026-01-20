@@ -302,9 +302,10 @@ class ChatPage(QWidget):
         # Display messages
         for msg in conv.messages:
             bubble = ChatBubble(msg.content, is_user=(msg.role == "user"))
-            # Connect play button for Sombra messages
+            # Connect play/stop buttons for Sombra messages
             if msg.role == "assistant":
                 bubble.play_requested.connect(self._on_replay_requested)
+                bubble.stop_requested.connect(self._on_stop_requested)
             self._add_message_widget(bubble)
 
     def _ensure_conversation(self) -> Conversation:
@@ -539,6 +540,7 @@ class ChatPage(QWidget):
             # Convert streaming bubble to permanent bubble
             sombra_bubble = ChatBubble(content, is_user=False)
             sombra_bubble.play_requested.connect(self._on_replay_requested)
+            sombra_bubble.stop_requested.connect(self._on_stop_requested)
             self._add_message_widget(sombra_bubble)
 
             # Synthesize and play response
@@ -568,6 +570,11 @@ class ChatPage(QWidget):
         """Handle replay button click - re-synthesize TTS."""
         if self._tts.is_enabled:
             self._tts.synthesize_async(text)
+
+    @Slot()
+    def _on_stop_requested(self) -> None:
+        """Handle stop button click - stop TTS playback."""
+        SoundService.stop_playback()
 
     @Slot(str)
     def _on_error(self, error: str) -> None:
