@@ -259,6 +259,7 @@ class UpdateService(QObject):
 
         if needs_admin:
             # Script with self-elevation for Program Files
+            # Key trick: Windows allows RENAMING a running exe, just not deleting it
             script = f'''@echo off
 chcp 65001 >nul
 
@@ -273,29 +274,36 @@ if %errorLevel% neq 0 (
 echo Sombra Update Script (Admin)
 echo ============================
 echo.
-echo Killing Sombra process...
+
+:: Step 1: Rename running exe (Windows allows this!)
+echo [1/5] Renaming old executable...
+del "{dest_path}\\Sombra_old.exe" 2>nul
+if exist "{exe_path}" ren "{exe_path}" Sombra_old.exe
+
+:: Step 2: Kill process
+echo [2/5] Stopping Sombra...
 taskkill /f /im Sombra.exe >nul 2>&1
-timeout /t 3 /nobreak >nul
+taskkill /f /im Sombra_old.exe >nul 2>&1
+timeout /t 2 /nobreak >nul
 
-echo.
-echo Extracting to temp folder...
-rd /s /q "{temp_extract}" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{temp_extract}' -Force"
+:: Step 3: Clean up old files
+echo [3/5] Removing old files...
+rd /s /q "{dest_path}\\_internal" 2>nul
+del "{dest_path}\\Sombra_old.exe" 2>nul
 
-if not exist "{temp_extract}\\Sombra.exe" (
-    echo ERROR: Extraction failed!
+:: Step 4: Extract new version directly
+echo [4/5] Installing update...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
+
+if not exist "{exe_path}" (
+    echo.
+    echo ERROR: Update failed!
     pause
     exit /b 1
 )
 
-echo.
-echo Copying files to: {dest_path}
-xcopy "{temp_extract}\\*" "{dest_path}\\" /E /Y /R /H /C >nul
-
-echo.
-echo Update installed! Starting Sombra...
-rd /s /q "{temp_extract}" 2>nul
-timeout /t 1 /nobreak >nul
+:: Step 5: Launch
+echo [5/5] Starting Sombra...
 start "" "{exe_path}"
 
 del "{zip_path}" 2>nul
@@ -303,35 +311,37 @@ timeout /t 2 /nobreak >nul
 del "%~f0"
 '''
         else:
-            # Simple script without elevation
+            # Simple script without elevation (same logic)
             script = f'''@echo off
 chcp 65001 >nul
 echo Sombra Update Script
 echo ====================
 echo.
-echo Killing Sombra process...
+
+echo [1/5] Renaming old executable...
+del "{dest_path}\\Sombra_old.exe" 2>nul
+if exist "{exe_path}" ren "{exe_path}" Sombra_old.exe
+
+echo [2/5] Stopping Sombra...
 taskkill /f /im Sombra.exe >nul 2>&1
-timeout /t 3 /nobreak >nul
+taskkill /f /im Sombra_old.exe >nul 2>&1
+timeout /t 2 /nobreak >nul
 
-echo.
-echo Extracting to temp folder...
-rd /s /q "{temp_extract}" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{temp_extract}' -Force"
+echo [3/5] Removing old files...
+rd /s /q "{dest_path}\\_internal" 2>nul
+del "{dest_path}\\Sombra_old.exe" 2>nul
 
-if not exist "{temp_extract}\\Sombra.exe" (
-    echo ERROR: Extraction failed!
+echo [4/5] Installing update...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '{zip_path}' -DestinationPath '{dest_path}' -Force"
+
+if not exist "{exe_path}" (
+    echo.
+    echo ERROR: Update failed!
     pause
     exit /b 1
 )
 
-echo.
-echo Copying files to: {dest_path}
-xcopy "{temp_extract}\\*" "{dest_path}\\" /E /Y /R /H /C >nul
-
-echo.
-echo Update installed! Starting Sombra...
-rd /s /q "{temp_extract}" 2>nul
-timeout /t 1 /nobreak >nul
+echo [5/5] Starting Sombra...
 start "" "{exe_path}"
 
 del "{zip_path}" 2>nul
