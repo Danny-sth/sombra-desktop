@@ -230,7 +230,8 @@ class UpdateService(QObject):
 
         # Convert paths to proper Windows format
         zip_path = str(self._update_path).replace('/', '\\')
-        dest_path = str(app_dir.parent).replace('/', '\\')
+        # Extract directly to app_dir (where Sombra.exe lives), not parent!
+        dest_path = str(app_dir).replace('/', '\\')
         exe_path = str(app_dir / 'Sombra.exe').replace('/', '\\')
 
         logger.info(f"Update paths - zip: {zip_path}, dest: {dest_path}, exe: {exe_path}")
