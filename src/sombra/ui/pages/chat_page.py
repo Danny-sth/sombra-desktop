@@ -71,6 +71,7 @@ class ChatPage(QWidget):
         self._tts = TtsService()
         self._tts.audio_ready.connect(self._on_tts_audio_ready)
         self._tts.synthesis_error.connect(self._on_tts_error)
+        self._current_tts_bubble: ChatBubble | None = None  # Track bubble for caching
 
         # Wake word cooldown
         self._last_recording_end_time: float = 0
@@ -305,6 +306,7 @@ class ChatPage(QWidget):
             # Connect play/stop buttons for Sombra messages
             if msg.role == "assistant":
                 bubble.play_requested.connect(self._on_replay_requested)
+                bubble.play_audio.connect(self._on_play_cached_audio)
                 bubble.stop_requested.connect(self._on_stop_requested)
             self._add_message_widget(bubble)
 
@@ -540,11 +542,13 @@ class ChatPage(QWidget):
             # Convert streaming bubble to permanent bubble
             sombra_bubble = ChatBubble(content, is_user=False)
             sombra_bubble.play_requested.connect(self._on_replay_requested)
+            sombra_bubble.play_audio.connect(self._on_play_cached_audio)
             sombra_bubble.stop_requested.connect(self._on_stop_requested)
             self._add_message_widget(sombra_bubble)
 
-            # Synthesize and play response
+            # Synthesize and play response (track bubble for caching)
             if self._tts.is_enabled:
+                self._current_tts_bubble = sombra_bubble
                 self._tts.synthesize_async(content)
 
         self._streaming_bubble.hide()
@@ -556,8 +560,12 @@ class ChatPage(QWidget):
 
     @Slot(bytes)
     def _on_tts_audio_ready(self, audio: bytes) -> None:
-        """Handle TTS audio ready - play it."""
+        """Handle TTS audio ready - play and cache it."""
         logger.info(f"TTS audio ready: {len(audio)} bytes")
+        # Cache audio in the bubble
+        if self._current_tts_bubble is not None:
+            self._current_tts_bubble.set_audio(audio)
+            self._current_tts_bubble = None
         SoundService.play_audio(audio)
 
     @Slot(str)
@@ -567,9 +575,18 @@ class ChatPage(QWidget):
 
     @Slot(str)
     def _on_replay_requested(self, text: str) -> None:
-        """Handle replay button click - re-synthesize TTS."""
+        """Handle replay button click - synthesize TTS and cache."""
         if self._tts.is_enabled:
+            # Track which bubble requested TTS for caching
+            bubble = self.sender()
+            if isinstance(bubble, ChatBubble):
+                self._current_tts_bubble = bubble
             self._tts.synthesize_async(text)
+
+    @Slot(bytes)
+    def _on_play_cached_audio(self, audio: bytes) -> None:
+        """Handle play cached audio directly."""
+        SoundService.play_audio(audio)
 
     @Slot()
     def _on_stop_requested(self) -> None:

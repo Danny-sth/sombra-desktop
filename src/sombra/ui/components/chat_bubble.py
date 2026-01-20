@@ -26,8 +26,10 @@ class ChatBubble(CardWidget):
     Supports markdown rendering and syntax highlighting.
     """
 
-    # Signal emitted when play button is clicked (sends content text)
+    # Signal emitted when play button is clicked (sends content text for TTS)
     play_requested = Signal(str)
+    # Signal emitted when cached audio should be played
+    play_audio = Signal(bytes)
     # Signal emitted when stop button is clicked
     stop_requested = Signal()
 
@@ -41,6 +43,7 @@ class ChatBubble(CardWidget):
 
         self._is_user = is_user
         self._content = content
+        self._cached_audio: bytes | None = None
 
         self._setup_ui()
         self._apply_style()
@@ -215,12 +218,24 @@ class ChatBubble(CardWidget):
 
     def _on_play_clicked(self) -> None:
         """Handle play button click."""
-        if self._content:
+        if self._cached_audio:
+            # Use cached audio
+            self.play_audio.emit(self._cached_audio)
+        elif self._content:
+            # Request TTS synthesis
             self.play_requested.emit(self._content)
 
     def _on_stop_clicked(self) -> None:
         """Handle stop button click."""
         self.stop_requested.emit()
+
+    def set_audio(self, audio: bytes) -> None:
+        """Cache audio data for this bubble."""
+        self._cached_audio = audio
+
+    def has_audio(self) -> bool:
+        """Check if audio is cached."""
+        return self._cached_audio is not None
 
 
 class ThinkingBubble(CardWidget):
