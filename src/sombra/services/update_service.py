@@ -230,11 +230,26 @@ class UpdateService(QObject):
 
         # Get actual paths from running executable
         current_exe = Path(sys.executable)
-        zip_path = str(self._update_path).replace('/', '\\')
-        dest_path = str(current_exe.parent).replace('/', '\\')
-        exe_path = str(current_exe).replace('/', '\\')
+        exe_dir = current_exe.parent
 
-        logger.info(f"Update: current_exe={current_exe}, zip={zip_path}, dest={dest_path}")
+        # Find the actual app directory (where _internal folder is)
+        # This handles both correct installs (Program Files/Sombra/)
+        # and broken installs (directly in Program Files/)
+        if (exe_dir / "_internal").exists():
+            # _internal is next to exe - this is the app dir
+            app_install_dir = exe_dir
+        elif (exe_dir.parent / "_internal").exists():
+            # Weird case - shouldn't happen but handle it
+            app_install_dir = exe_dir.parent
+        else:
+            # Fallback to exe directory
+            app_install_dir = exe_dir
+
+        zip_path = str(self._update_path).replace('/', '\\')
+        dest_path = str(app_install_dir).replace('/', '\\')
+        exe_path = str(app_install_dir / 'Sombra.exe').replace('/', '\\')
+
+        logger.info(f"Update: exe={current_exe}, app_dir={app_install_dir}, dest={dest_path}")
 
         # Check if needs admin rights
         needs_admin = "program files" in dest_path.lower()
@@ -255,8 +270,9 @@ if %errorLevel% neq 0 (
 echo Sombra Update Script (Admin)
 echo ============================
 echo.
-echo Waiting for Sombra to close...
-timeout /t 3 /nobreak >nul
+echo Killing Sombra process...
+taskkill /f /im Sombra.exe >nul 2>&1
+timeout /t 2 /nobreak >nul
 
 echo.
 echo Extracting update to: {dest_path}
@@ -284,8 +300,9 @@ chcp 65001 >nul
 echo Sombra Update Script
 echo ====================
 echo.
-echo Waiting for Sombra to close...
-timeout /t 3 /nobreak >nul
+echo Killing Sombra process...
+taskkill /f /im Sombra.exe >nul 2>&1
+timeout /t 2 /nobreak >nul
 
 echo.
 echo Extracting update to: {dest_path}
