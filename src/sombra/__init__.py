@@ -1,4 +1,4 @@
 """Sombra Desktop - Voice-enabled AI assistant desktop application."""
 
-__version__ = "0.2.25"
+__version__ = "0.2.26"
 __app_name__ = "Sombra Desktop"

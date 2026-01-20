@@ -346,9 +346,5 @@ rm "$0"
             self._downloader.quit()
             self._downloader.wait(1000)
 
-        # Clean up temp file if not used
-        if self._update_path and os.path.exists(self._update_path):
-            try:
-                os.unlink(self._update_path)
-            except Exception:
-                pass
+        # DON'T clean up temp file - update script needs it!
+        # The batch/shell script will delete it after extraction
