@@ -18,6 +18,7 @@ from qfluentwidgets import (
 )
 
 from sombra import __version__
+from ..components.log_panel import LogPanel
 
 
 class HomePage(ScrollArea):
@@ -51,6 +52,9 @@ class HomePage(ScrollArea):
 
         # Info section
         self._create_info_section(layout)
+
+        # Server logs panel
+        self._create_log_panel(layout)
 
         layout.addStretch()
 
@@ -193,6 +197,17 @@ class HomePage(ScrollArea):
 
         parent_layout.addWidget(info_card)
 
+    def _create_log_panel(self, parent_layout: QVBoxLayout) -> None:
+        """Create server logs panel."""
+        section_title = SubtitleLabel("Server Logs")
+        parent_layout.addWidget(section_title)
+
+        self._log_panel = LogPanel(self)
+        parent_layout.addWidget(self._log_panel)
+
+        # Start streaming automatically
+        self._log_panel.start_streaming()
+
     # ===== Slot Handlers =====
 
     @Slot()
@@ -258,3 +273,8 @@ class HomePage(ScrollArea):
             else:
                 status_label.setText("Disabled")
                 status_label.setStyleSheet("color: #888888;")
+
+    def cleanup(self) -> None:
+        """Clean up resources."""
+        if hasattr(self, "_log_panel"):
+            self._log_panel.cleanup()

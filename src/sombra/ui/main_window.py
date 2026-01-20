@@ -425,6 +425,7 @@ class MainWindow(FluentWindow):
         self._hotkey_service.cleanup()
         self._update_service.cleanup()
         self.devices_page.cleanup()
+        self.home_page.cleanup()
 
         # Hide tray icon
         if hasattr(self, '_tray'):
