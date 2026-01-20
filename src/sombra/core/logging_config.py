@@ -156,11 +156,15 @@ class WebSocketLogHandler(logging.Handler):
         """Send queued logs to server."""
         while not self._stop_event.is_set():
             try:
-                # Get with timeout to check stop event periodically
-                log_entry = self._queue.get(timeout=0.5)
-                await ws.send(json.dumps(log_entry))
-            except queue.Empty:
-                continue
+                # Use asyncio.to_thread to avoid blocking event loop
+                try:
+                    log_entry = await asyncio.wait_for(
+                        asyncio.to_thread(self._queue.get, True, 0.5),
+                        timeout=1.0
+                    )
+                    await ws.send(json.dumps(log_entry))
+                except (queue.Empty, asyncio.TimeoutError):
+                    continue
             except WebSocketException:
                 break
 
