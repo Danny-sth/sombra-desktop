@@ -309,8 +309,9 @@ if not exist "{temp_extract}\\Sombra.exe" (
 )
 
 :: Step 4: Use robocopy to mirror (handles read-only, retries)
+:: /XF excludes .env and .env.example from being deleted
 echo [4/6] Installing files...
-robocopy "{temp_extract}" "{dest_path}" /MIR /R:3 /W:1 /NP /NFL /NDL /NJH /NJS >nul
+robocopy "{temp_extract}" "{dest_path}" /MIR /R:3 /W:1 /NP /NFL /NDL /NJH /NJS /XF .env .env.example >nul
 
 :: Step 5: Cleanup
 echo [5/6] Cleaning up...
@@ -353,7 +354,7 @@ if not exist "{temp_extract}\\Sombra.exe" (
 )
 
 echo [4/6] Installing files...
-robocopy "{temp_extract}" "{dest_path}" /MIR /R:3 /W:1 /NP /NFL /NDL /NJH /NJS >nul
+robocopy "{temp_extract}" "{dest_path}" /MIR /R:3 /W:1 /NP /NFL /NDL /NJH /NJS /XF .env .env.example >nul
 
 echo [5/6] Cleaning up...
 del "{dest_path}\\Sombra_old.exe" 2>nul

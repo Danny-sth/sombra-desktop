@@ -30,7 +30,9 @@ class Settings:
                 if env_file.exists():
                     load_dotenv(env_file)
                 else:
-                    load_dotenv()
+                    # Create default .env if missing
+                    self._create_default_env(env_file)
+                    load_dotenv(env_file)
             else:
                 load_dotenv()
 
@@ -53,6 +55,20 @@ class Settings:
         self.wake_word_enabled: bool = os.getenv("WAKE_WORD_ENABLED", "true").lower() == "true"
         self.wake_word: str = os.getenv("WAKE_WORD", "jarvis")
         self.porcupine_access_key: Optional[str] = os.getenv("PORCUPINE_ACCESS_KEY")
+
+    def _create_default_env(self, env_file: Path) -> None:
+        """Create default .env file with production settings."""
+        default_env = """# Sombra Desktop Configuration
+SOMBRA_API_URL=http://90.156.230.49:8080
+SOMBRA_SESSION_ID=owner
+STT_URL=http://100.87.46.63:5000/transcribe
+THEME=dark
+GLOBAL_HOTKEY=ctrl+shift+s
+"""
+        try:
+            env_file.write_text(default_env, encoding='utf-8')
+        except Exception:
+            pass  # Ignore errors, will use defaults
 
     def _get_int(self, key: str, default: Optional[int] = None) -> Optional[int]:
         """Get integer from environment variable."""
