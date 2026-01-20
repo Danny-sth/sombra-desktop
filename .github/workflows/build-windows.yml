@@ -98,22 +98,29 @@ jobs:
           name: Sombra-Portable-${{ steps.version.outputs.version }}
           path: ./portable
 
-      - name: Rename installer to correct version
+      - name: Debug and rename installer
         run: |
-          cd release
-          ls -la
-          # Find and rename exe file to correct version
-          if ls *.exe 1>/dev/null 2>&1; then
-            for f in *.exe; do
-              echo "Renaming $f to SombraSetup-${{ steps.version.outputs.version }}.exe"
-              mv "$f" "SombraSetup-${{ steps.version.outputs.version }}.exe"
-              break  # Only rename first one
-            done
+          echo "=== Directory structure ==="
+          find . -name "*.exe" 2>/dev/null || echo "No exe found with find"
+          echo ""
+          echo "=== Release folder ==="
+          ls -laR ./release || echo "No release folder"
+          echo ""
+
+          # Find exe anywhere and move to release with correct name
+          EXE_FILE=$(find ./release -name "*.exe" -type f 2>/dev/null | head -1)
+          if [ -n "$EXE_FILE" ]; then
+            echo "Found exe: $EXE_FILE"
+            mv "$EXE_FILE" "./release/SombraSetup-${{ steps.version.outputs.version }}.exe"
+            echo "Renamed to SombraSetup-${{ steps.version.outputs.version }}.exe"
           else
-            echo "No exe files found!"
+            echo "ERROR: No exe file found!"
             exit 1
           fi
-          ls -la
+
+          echo ""
+          echo "=== Final release folder ==="
+          ls -la ./release
 
       - name: Create portable zip
         run: |
