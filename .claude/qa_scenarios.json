@@ -1,0 +1,112 @@
+{
+  "project": "sombra-desktop",
+  "test_url": "http://90.156.230.49:8080",
+  "test_command": "cd /home/danny/Documents/projects/sombra-desktop && source .venv/bin/activate && pytest",
+  "scenarios": [
+    {
+      "name": "health_check",
+      "type": "http",
+      "description": "Проверка доступности сервера Sombra",
+      "endpoint": "/health",
+      "method": "GET",
+      "expected_status": 200,
+      "response_contains": []
+    },
+    {
+      "name": "system_version",
+      "type": "http",
+      "description": "Получение версии API и информации о сборке",
+      "endpoint": "/api/system/version",
+      "method": "GET",
+      "expected_status": 200,
+      "response_contains": ["version"]
+    },
+    {
+      "name": "chat_basic_query",
+      "type": "http",
+      "description": "Отправка базового сообщения в чат",
+      "endpoint": "/api/chat",
+      "method": "POST",
+      "body": {
+        "query": "ping",
+        "session_id": "qa_test"
+      },
+      "expected_status": 200,
+      "response_contains": ["response"]
+    },
+    {
+      "name": "chat_empty_query",
+      "type": "http",
+      "description": "Error handling: пустой запрос должен вернуть ошибку",
+      "endpoint": "/api/chat",
+      "method": "POST",
+      "body": {
+        "query": "",
+        "session_id": "qa_test"
+      },
+      "expected_status": 400,
+      "response_contains": []
+    },
+    {
+      "name": "chat_missing_session",
+      "type": "http",
+      "description": "Error handling: запрос без session_id",
+      "endpoint": "/api/chat",
+      "method": "POST",
+      "body": {
+        "query": "test"
+      },
+      "expected_status": 400,
+      "response_contains": []
+    },
+    {
+      "name": "logs_buffer",
+      "type": "http",
+      "description": "Получение буфера логов от всех клиентов",
+      "endpoint": "/api/logs/buffer",
+      "method": "GET",
+      "expected_status": 200,
+      "response_contains": []
+    },
+    {
+      "name": "logs_clients",
+      "type": "http",
+      "description": "Получение списка подключённых клиентов",
+      "endpoint": "/api/logs/clients",
+      "method": "GET",
+      "expected_status": 200,
+      "response_contains": []
+    },
+    {
+      "name": "thinking_stream_nonexistent",
+      "type": "http",
+      "description": "SSE стрим для несуществующей сессии должен подключиться",
+      "endpoint": "/api/thinking/stream/nonexistent_session_12345",
+      "method": "GET",
+      "expected_status": 200,
+      "response_contains": []
+    },
+    {
+      "name": "invalid_endpoint",
+      "type": "http",
+      "description": "Error handling: несуществующий эндпоинт",
+      "endpoint": "/api/nonexistent/endpoint",
+      "method": "GET",
+      "expected_status": 404,
+      "response_contains": []
+    },
+    {
+      "name": "chat_long_query",
+      "type": "http",
+      "description": "Обработка длинного запроса (>1000 символов)",
+      "endpoint": "/api/chat",
+      "method": "POST",
+      "body": {
+        "query": "Это очень длинный тестовый запрос, который повторяется много раз для проверки обработки больших сообщений. Это очень длинный тестовый запрос, который повторяется много раз для проверки обработки больших сообщений. Это очень длинный тестовый запрос, который повторяется много раз для проверки обработки больших сообщений. Это очень длинный тестовый запрос, который повторяется много раз для проверки обработки больших сообщений. Это очень длинный тестовый запрос, который повторяется много раз для проверки обработки больших сообщений. Это очень длинный тестовый запрос, который повторяется много раз для проверки обработки больших сообщений. Это очень длинный тестовый запрос, который повторяется много раз для проверки обработки больших сообщений. Это очень длинный тестовый запрос, который повторяется много раз для проверки обработки больших сообщений.",
+        "session_id": "qa_test_long"
+      },
+      "expected_status": 200,
+      "response_contains": ["response"]
+    }
+  ]
+}
