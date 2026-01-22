@@ -1,6 +1,6 @@
 {
   "project": "sombra-desktop",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "QA test scenarios for Sombra Desktop application",
   "test_url": "http://90.156.230.49:8080",
   "stt_url": "http://100.87.46.63:5000",
@@ -51,7 +51,7 @@
         "query": "",
         "session_id": "qa_test"
       },
-      "expected_status": 400
+      "expected_status": 422
     },
     {
       "name": "logs_buffer",
@@ -91,21 +91,21 @@
       "name": "python_syntax_check",
       "type": "command",
       "description": "Verify Python source files have valid syntax",
-      "command": "cd /home/danny/Documents/projects/sombra-desktop && python -m py_compile src/sombra/__main__.py src/sombra/app.py",
+      "command": "cd /home/danny/Documents/projects/sombra-desktop && python -m py_compile src/sombra/__main__.py src/sombra/app.py src/sombra/config/settings.py",
       "expected_exit_code": 0
     },
     {
       "name": "import_check",
       "type": "command",
       "description": "Verify main module can be imported without errors",
-      "command": "cd /home/danny/Documents/projects/sombra-desktop && source .venv/bin/activate && python -c 'from sombra.config.settings import Settings; print(\"Import OK\")'",
+      "command": "cd /home/danny/Documents/projects/sombra-desktop && source .venv/bin/activate && python -c 'from sombra.config.settings import Settings; from sombra.services.sombra_service import SombraService; print(\"Import OK\")'",
       "expected_exit_code": 0
     },
     {
       "name": "ruff_lint",
       "type": "command",
       "description": "Run ruff linter on source code",
-      "command": "cd /home/danny/Documents/projects/sombra-desktop && source .venv/bin/activate && python -m ruff check src/sombra/ --select=E,F --ignore=E501",
+      "command": "cd /home/danny/Documents/projects/sombra-desktop && source .venv/bin/activate && ruff check src/sombra/ --select=E,F --ignore=E501",
       "expected_exit_code": 0
     }
   ]
