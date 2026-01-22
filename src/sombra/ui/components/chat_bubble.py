@@ -1,4 +1,4 @@
-"""Chat message bubble components."""
+"""Chat message bubble components with Sombra branding."""
 
 import re
 
@@ -8,6 +8,13 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget, QTextBrowser, QHBoxLayout
 from qfluentwidgets import CardWidget, CaptionLabel, isDarkTheme, TransparentToolButton, FluentIcon
 
 from ..styles.theme import SciFiTheme
+from sombra.themes.colors import (
+    SOMBRA_PRIMARY,
+    SOMBRA_PRIMARY_LIGHT,
+    SOMBRA_PRIMARY_MUTED,
+    BORDER_RADIUS,
+    TRANSPARENCY,
+)
 
 try:
     import markdown
@@ -20,10 +27,17 @@ except ImportError:
     HAS_MARKDOWN = False
 
 
+# Sombra brand RGB values
+_PRIMARY_RGB = "233, 69, 96"
+_PRIMARY_LIGHT_RGB = "255, 107, 138"
+_SECONDARY_RGB = "83, 52, 131"
+
+
 class ChatBubble(CardWidget):
-    """Message bubble card for chat display.
+    """Message bubble card for chat display with Sombra branding.
 
     Supports markdown rendering and syntax highlighting.
+    Uses unified Sombra pink (#e94560) as primary accent.
     """
 
     # Signal emitted when play button is clicked (sends content text for TTS)
@@ -59,12 +73,12 @@ class ChatBubble(CardWidget):
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(8)
 
-        # Role label with Sci-Fi colors
+        # Role label with Sombra colors
         role_text = "You" if self._is_user else "Sombra"
         self._role_label = CaptionLabel(role_text)
 
-        # Set role color - magenta for user, cyan for Sombra
-        role_color = SciFiTheme.MAGENTA if self._is_user else SciFiTheme.CYAN
+        # Unified Sombra pink for both - lighter for user, primary for Sombra
+        role_color = SOMBRA_PRIMARY_LIGHT if self._is_user else SOMBRA_PRIMARY
         self._role_label.setStyleSheet(f"color: {role_color}; font-weight: 600;")
 
         header_layout.addWidget(self._role_label)
@@ -76,12 +90,28 @@ class ChatBubble(CardWidget):
             self._play_button.setFixedSize(24, 24)
             self._play_button.setToolTip("Play audio")
             self._play_button.clicked.connect(self._on_play_clicked)
+            self._play_button.setStyleSheet(f"""
+                TransparentToolButton {{
+                    border-radius: {BORDER_RADIUS["sm"]};
+                }}
+                TransparentToolButton:hover {{
+                    background-color: rgba({_PRIMARY_RGB}, 0.12);
+                }}
+            """)
             header_layout.addWidget(self._play_button)
 
             self._stop_button = TransparentToolButton(FluentIcon.PAUSE)
             self._stop_button.setFixedSize(24, 24)
             self._stop_button.setToolTip("Stop audio")
             self._stop_button.clicked.connect(self._on_stop_clicked)
+            self._stop_button.setStyleSheet(f"""
+                TransparentToolButton {{
+                    border-radius: {BORDER_RADIUS["sm"]};
+                }}
+                TransparentToolButton:hover {{
+                    background-color: rgba({_PRIMARY_RGB}, 0.12);
+                }}
+            """)
             header_layout.addWidget(self._stop_button)
 
         layout.addLayout(header_layout)
@@ -93,13 +123,15 @@ class ChatBubble(CardWidget):
         self._content_browser.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self._content_browser.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        # Style the browser
-        self._content_browser.setStyleSheet("""
-            QTextBrowser {
+        # Style the browser with Sombra selection color
+        self._content_browser.setStyleSheet(f"""
+            QTextBrowser {{
                 background-color: transparent;
                 border: none;
                 padding: 0;
-            }
+                selection-background-color: rgba({_PRIMARY_RGB}, 0.35);
+                selection-color: #f0f0f0;
+            }}
         """)
 
         # Render content
@@ -108,12 +140,12 @@ class ChatBubble(CardWidget):
         layout.addWidget(self._content_browser)
 
     def _apply_style(self) -> None:
-        """Apply Sci-Fi bubble styling based on sender."""
+        """Apply Sombra bubble styling based on sender."""
         if self._is_user:
-            # User bubble - magenta accent with glassmorphism
+            # User bubble - lighter pink accent with glassmorphism
             self.setStyleSheet(SciFiTheme.USER_BUBBLE)
         else:
-            # Sombra bubble - cyan accent with glassmorphism
+            # Sombra bubble - primary pink accent with glassmorphism
             self.setStyleSheet(SciFiTheme.SOMBRA_BUBBLE)
 
     def _render_content(self) -> None:
@@ -134,7 +166,13 @@ class ChatBubble(CardWidget):
         # Text color based on theme
         text_color = SciFiTheme.get_text_color(isDarkTheme())
 
+        # Link color uses Sombra primary
         styled_html = f"""
+        <style>
+            a {{ color: {SOMBRA_PRIMARY}; text-decoration: none; }}
+            a:hover {{ color: {SOMBRA_PRIMARY_LIGHT}; text-decoration: underline; }}
+            code {{ background-color: rgba({_PRIMARY_RGB}, 0.10); padding: 2px 6px; border-radius: 4px; }}
+        </style>
         <div style="font-family: 'Segoe UI', sans-serif; font-size: 14px;
                     line-height: 1.6; color: {text_color};">
             {html}
@@ -164,7 +202,7 @@ class ChatBubble(CardWidget):
         return html
 
     def _highlight_code_blocks(self, content: str) -> str:
-        """Apply syntax highlighting to code blocks."""
+        """Apply syntax highlighting to code blocks with Sombra-themed styling."""
         if not HAS_MARKDOWN:
             return content
 
@@ -185,11 +223,16 @@ class ChatBubble(CardWidget):
                 )
                 highlighted = highlight(code, lexer, formatter)
 
-                return f'<pre style="background-color: #1e1e1e; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 8px 0;"><code>{highlighted}</code></pre>'
+                # Sombra-styled code block with rounded corners
+                return f'''<pre style="background-color: #12121f; padding: 12px;
+                    border-radius: {BORDER_RADIUS["md"]}; overflow-x: auto; margin: 8px 0;
+                    border: 1px solid rgba({_PRIMARY_RGB}, 0.15);"><code>{highlighted}</code></pre>'''
 
             except Exception:
                 escaped = code.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                return f'<pre style="background-color: #1e1e1e; padding: 12px; border-radius: 6px;"><code>{escaped}</code></pre>'
+                return f'''<pre style="background-color: #12121f; padding: 12px;
+                    border-radius: {BORDER_RADIUS["md"]};
+                    border: 1px solid rgba({_PRIMARY_RGB}, 0.15);"><code>{escaped}</code></pre>'''
 
         pattern = r"```(\w*)\n(.*?)```"
         return re.sub(pattern, highlight_match, content, flags=re.DOTALL)
@@ -227,7 +270,7 @@ class ChatBubble(CardWidget):
 
 
 class ThinkingBubble(CardWidget):
-    """Thinking indicator bubble with Sci-Fi styling."""
+    """Thinking indicator bubble with Sombra styling."""
 
     def __init__(self, text: str = "", parent: QWidget | None = None):
         super().__init__(parent)
@@ -237,13 +280,13 @@ class ThinkingBubble(CardWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 12, 16, 12)
 
-        # Thinking label with muted cyan
+        # Thinking label with muted Sombra color
         self._label = CaptionLabel(text if text else "Thinking...")
         self._label.setStyleSheet(f"color: {SciFiTheme.TEXT_SECONDARY}; font-style: italic;")
         layout.addWidget(self._label)
         layout.addStretch()
 
-        # Sci-Fi style
+        # Sombra-branded thinking style
         self.setStyleSheet(SciFiTheme.THINKING_BUBBLE)
 
     def set_text(self, text: str) -> None:
@@ -253,7 +296,7 @@ class ThinkingBubble(CardWidget):
 
 
 class StreamingBubble(CardWidget):
-    """Bubble for streaming responses with Sci-Fi styling."""
+    """Bubble for streaming responses with Sombra styling."""
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -264,24 +307,32 @@ class StreamingBubble(CardWidget):
         self._setup_ui()
 
     def _setup_ui(self) -> None:
-        """Build the streaming bubble UI with Sci-Fi styling."""
+        """Build the streaming bubble UI with Sombra styling."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(8)
 
-        # Role label with cyan accent
+        # Role label with Sombra primary accent
         self._role_label = CaptionLabel("Sombra")
-        self._role_label.setStyleSheet(f"color: {SciFiTheme.CYAN}; font-weight: 600;")
+        self._role_label.setStyleSheet(f"color: {SOMBRA_PRIMARY}; font-weight: 600;")
         layout.addWidget(self._role_label)
 
         # Content browser with transparent background
         self._content_browser = QTextBrowser()
         self._content_browser.setOpenExternalLinks(True)
         self._content_browser.setReadOnly(True)
-        self._content_browser.setStyleSheet(SciFiTheme.TEXT_BROWSER)
+        self._content_browser.setStyleSheet(f"""
+            QTextBrowser {{
+                background-color: transparent;
+                border: none;
+                padding: 0;
+                selection-background-color: rgba({_PRIMARY_RGB}, 0.35);
+                selection-color: #f0f0f0;
+            }}
+        """)
         layout.addWidget(self._content_browser)
 
-        # Sci-Fi streaming style
+        # Sombra streaming style
         self.setStyleSheet(SciFiTheme.STREAMING_BUBBLE)
 
     def start_streaming(self) -> None:
@@ -320,7 +371,13 @@ class StreamingBubble(CardWidget):
         else:
             html = self._content.replace("\n", "<br>")
 
+        # Sombra-styled HTML with link colors
         styled_html = f"""
+        <style>
+            a {{ color: {SOMBRA_PRIMARY}; text-decoration: none; }}
+            a:hover {{ color: {SOMBRA_PRIMARY_LIGHT}; text-decoration: underline; }}
+            code {{ background-color: rgba({_PRIMARY_RGB}, 0.10); padding: 2px 6px; border-radius: 4px; }}
+        </style>
         <div style="font-family: 'Segoe UI', sans-serif; font-size: 14px;
                     line-height: 1.6; color: {text_color};">
             {html}
