@@ -5,6 +5,7 @@ from .chat_bubble import ChatBubble, ThinkingBubble
 from .status_card import ConnectionStatusCard, StatusCard
 from .chat_sidebar import ChatSidebar, ConversationItem
 from .log_panel import LogPanel
+from .agent_status_card import AgentStatusCard, AgentStatus, StatusBadge
 
 __all__ = [
     "FluentVoiceButton",
@@ -15,4 +16,7 @@ __all__ = [
     "ChatSidebar",
     "ConversationItem",
     "LogPanel",
+    "AgentStatusCard",
+    "AgentStatus",
+    "StatusBadge",
 ]

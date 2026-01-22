@@ -2,6 +2,7 @@
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -92,6 +93,19 @@ class SettingsDialog(QDialog):
 
         layout.addWidget(audio_group)
 
+        # ===== Voice Input Settings =====
+        voice_group = QGroupBox("Voice Input")
+        voice_layout = QFormLayout(voice_group)
+
+        self._auto_send_checkbox = QCheckBox("Automatically send after silence")
+        self._auto_send_checkbox.setToolTip(
+            "When enabled, voice input is automatically sent after detecting silence.\n"
+            "When disabled, you must manually confirm before sending."
+        )
+        voice_layout.addRow("Auto-send:", self._auto_send_checkbox)
+
+        layout.addWidget(voice_group)
+
         # ===== Buttons =====
         button_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
@@ -139,6 +153,9 @@ class SettingsDialog(QDialog):
             if index >= 0:
                 self._device_combo.setCurrentIndex(index)
 
+        # Set auto-send on silence
+        self._auto_send_checkbox.setChecked(settings.auto_send_on_silence)
+
     def _save_settings(self) -> None:
         """Persist settings and emit signal."""
         new_settings = {
@@ -148,6 +165,7 @@ class SettingsDialog(QDialog):
             "theme": self._theme_combo.currentText(),
             "hotkey": self._hotkey_input.keySequence().toString(),
             "audio_device_id": self._device_combo.currentData(),
+            "auto_send_on_silence": self._auto_send_checkbox.isChecked(),
         }
 
         self.settings_changed.emit(new_settings)
@@ -166,4 +184,5 @@ class SettingsDialog(QDialog):
             "theme": self._theme_combo.currentText(),
             "hotkey": self._hotkey_input.keySequence().toString(),
             "audio_device_id": self._device_combo.currentData(),
+            "auto_send_on_silence": self._auto_send_checkbox.isChecked(),
         }

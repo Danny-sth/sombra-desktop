@@ -61,6 +61,9 @@ class Settings:
         self.minimize_to_tray: bool = os.getenv("MINIMIZE_TO_TRAY", "true").lower() == "true"
         self.start_minimized: bool = os.getenv("START_MINIMIZED", "false").lower() == "true"
 
+        # Voice Input Settings
+        self.auto_send_on_silence: bool = os.getenv("AUTO_SEND_ON_SILENCE", "true").lower() == "true"
+
     def _create_default_env(self, env_file: Path) -> None:
         """Create default .env file with production settings."""
         default_env = """# Sombra Desktop Configuration
@@ -73,6 +76,9 @@ STT_URL=http://100.87.46.63:5000/transcribe
 
 THEME=dark
 GLOBAL_HOTKEY=ctrl+shift+s
+
+# Voice Input
+AUTO_SEND_ON_SILENCE=true
 """
         try:
             env_file.write_text(default_env, encoding='utf-8')

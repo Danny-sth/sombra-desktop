@@ -18,6 +18,8 @@ from qfluentwidgets import (
 
 from .system_tray import SystemTray
 from .utils import get_app_icon
+from .widgets.connection_indicator import ConnectionIndicator
+from .widgets.footer import Footer
 from .pages.home_page import HomePage
 from .pages.chat_page import ChatPage
 from .pages.agents_page import AgentsPage
@@ -224,13 +226,32 @@ class MainWindow(FluentWindow):
             NavigationItemPosition.BOTTOM
         )
 
+        # Connection status indicator at the very bottom of sidebar
+        self._connection_indicator = ConnectionIndicator(self)
+        self._connection_indicator.setObjectName("connectionIndicator")
+
+        # Footer with version info
+        self._footer = Footer(self)
+        self._footer.setObjectName("footer")
+
+        # Add to navigation panel's bottom layout (below Settings)
+        nav_panel = self.navigationInterface.panel
+        nav_panel.bottomLayout.addWidget(self._connection_indicator)
+        nav_panel.bottomLayout.addWidget(self._footer)
+
         # Navigate to chat by default
         self.switchTo(self.chat_page)
 
     def _connect_signals(self) -> None:
         """Connect service signals to UI updates."""
-        # Connection status to dashboard
+        # Connection status to dashboard and sidebar indicator
         self._sombra_service.connection_status.connect(self._on_connection_status)
+        self._sombra_service.connection_status.connect(self._connection_indicator.set_status)
+
+        # Connection indicator click triggers connection check
+        self._connection_indicator.clicked.connect(
+            self._sombra_service.check_connection_async
+        )
 
         # Recording status to dashboard
         self._audio_service.recording_started.connect(
@@ -242,6 +263,9 @@ class MainWindow(FluentWindow):
 
         # Settings theme change
         self.settings_page.theme_changed.connect(self._on_theme_changed)
+
+        # Initial connection check on startup (after 1 second to let UI settle)
+        QTimer.singleShot(1000, self._sombra_service.check_connection_async)
 
         # Update signals
         self._update_service.update_available.connect(self._on_update_available)
@@ -296,8 +320,10 @@ class MainWindow(FluentWindow):
     @Slot(str)
     def _on_theme_changed(self, theme: str) -> None:
         """Handle theme change from settings."""
-        # Theme is already applied by settings page
-        pass
+        # Update connection indicator theme
+        self._connection_indicator.set_theme(theme)
+        # Update footer theme
+        self._footer.set_theme(theme)
 
     # ===== Update Handlers =====
 
