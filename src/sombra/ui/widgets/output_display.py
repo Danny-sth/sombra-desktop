@@ -1,9 +1,8 @@
 """Streaming output display widget with markdown rendering."""
 
 import re
-from typing import Optional
 
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Slot
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import QTextBrowser, QVBoxLayout, QWidget
 

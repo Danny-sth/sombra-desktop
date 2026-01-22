@@ -1,17 +1,10 @@
 """Update dialog with download progress."""
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-)
+from PySide6.QtCore import Signal
 from qfluentwidgets import (
     MessageBoxBase,
     SubtitleLabel,
     BodyLabel,
-    PrimaryPushButton,
-    PushButton,
     ProgressBar,
     TextEdit,
 )

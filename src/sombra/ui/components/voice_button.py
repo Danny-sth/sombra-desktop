@@ -1,7 +1,7 @@
 """Fluent Design voice button with animations."""
 
 from PySide6.QtCore import Property, QPropertyAnimation, QEasingCurve, Qt, Signal
-from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QFont
+from PySide6.QtGui import QColor, QPainter, QPen, QBrush
 from PySide6.QtWidgets import QWidget
 
 

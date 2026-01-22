@@ -2,9 +2,7 @@
 
 import io
 import logging
-import time
 import wave
-from typing import Optional
 
 import numpy as np
 from PySide6.QtCore import QObject, Qt, Signal, Slot

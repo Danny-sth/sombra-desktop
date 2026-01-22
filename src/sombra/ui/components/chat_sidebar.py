@@ -1,7 +1,6 @@
 """Collapsible sidebar for chat history."""
 
 from datetime import datetime, timedelta
-from typing import Optional
 
 from PySide6.QtCore import Qt, Signal, Slot, QPropertyAnimation, QEasingCurve
 from PySide6.QtGui import QAction
@@ -9,7 +8,6 @@ from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QScrollArea,
     QFrame,
     QMenu,
     QInputDialog,

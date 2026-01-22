@@ -10,7 +10,7 @@ import queue
 import sys
 import threading
 from datetime import datetime
-from logging.handlers import RotatingFileHandler, QueueHandler, QueueListener
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional, Callable
 
@@ -114,8 +114,6 @@ class WebSocketLogHandler(logging.Handler):
 
     async def _async_sender(self):
         """Async loop that sends queued logs and receives commands."""
-        logger = logging.getLogger(__name__)
-
         while not self._stop_event.is_set():
             try:
                 async with websockets.connect(
@@ -144,7 +142,7 @@ class WebSocketLogHandler(logging.Handler):
                         except asyncio.CancelledError:
                             pass
 
-            except Exception as e:
+            except Exception:
                 self._connected = False
                 # Wait before reconnect
                 for _ in range(50):  # 5 seconds total

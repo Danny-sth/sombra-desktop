@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 
-from PySide6.QtCore import Qt, Slot, QThread, Signal, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import Slot, QThread, Signal
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel
 
 from qfluentwidgets import (
@@ -51,7 +51,7 @@ class SSELogWorker(QThread):
                                 except json.JSONDecodeError:
                                     pass
 
-            except Exception as e:
+            except Exception:
                 if self._running:
                     self.status_changed.emit("error")
                     # Wait before reconnect

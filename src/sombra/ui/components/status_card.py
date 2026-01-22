@@ -1,6 +1,6 @@
 """Status indicator card components."""
 
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Slot
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout
 
@@ -10,7 +10,6 @@ from qfluentwidgets import (
     CaptionLabel,
     IconWidget,
     FluentIcon,
-    isDarkTheme,
 )
 
 

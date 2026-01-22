@@ -1,5 +1,6 @@
 """Global hotkey service using pynput."""
 
+import logging
 import threading
 from typing import Any, Optional
 
@@ -7,14 +8,18 @@ from PySide6.QtCore import QObject, Signal
 
 from ..config.settings import get_settings
 
+logger = logging.getLogger(__name__)
+
 # Try to import pynput - it requires Xlib on Linux
+# Note: Warning is deferred to first HotkeyService usage to avoid noise during imports
 try:
     from pynput import keyboard
     PYNPUT_AVAILABLE = True
+    _PYNPUT_ERROR: Optional[str] = None
 except (ImportError, Exception) as e:
     keyboard = None  # type: ignore
     PYNPUT_AVAILABLE = False
-    print(f"Warning: pynput not available ({e}). Global hotkeys disabled.")
+    _PYNPUT_ERROR = str(e)
 
 
 class HotkeyService(QObject):
@@ -29,6 +34,8 @@ class HotkeyService(QObject):
     hotkey_released = Signal(str)  # Hotkey name
     error = Signal(str)
 
+    _warned_pynput_unavailable = False  # Class-level flag for one-time warning
+
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
 
@@ -38,6 +45,11 @@ class HotkeyService(QObject):
         self._active_hotkey: Optional[str] = None
         self._running = False
         self._lock = threading.Lock()
+
+        # Log warning about pynput unavailability (once per session)
+        if not PYNPUT_AVAILABLE and not HotkeyService._warned_pynput_unavailable:
+            HotkeyService._warned_pynput_unavailable = True
+            logger.warning(f"pynput not available ({_PYNPUT_ERROR}). Global hotkeys disabled.")
 
         # Build modifier keys mapping if pynput is available
         self._modifier_keys: dict[str, set] = {}

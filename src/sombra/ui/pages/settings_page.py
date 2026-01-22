@@ -233,7 +233,6 @@ class SettingsPage(ScrollArea):
     @Slot()
     def _on_configure_api_url(self) -> None:
         """Configure Sombra API URL."""
-        from qfluentwidgets import LineEdit, MessageBox
 
         # Simple input dialog
         InfoBar.info(

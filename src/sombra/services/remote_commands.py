@@ -10,12 +10,11 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Callable
+from typing import Any, Optional, Callable
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
-from ..config.settings import get_settings
 from ..core.logging_config import register_command_handler, get_ws_handler
 
 logger = logging.getLogger(__name__)
@@ -294,7 +293,7 @@ class RemoteCommandService:
                         "is_dir": entry.is_dir(),
                         "size": stat.st_size if entry.is_file() else None,
                     })
-                except:
+                except OSError:
                     entries.append({"name": entry.name, "error": "stat failed"})
 
             self._send_response("list_dir", True, {

@@ -26,7 +26,6 @@ from qfluentwidgets import (
     FluentIcon,
     InfoBar,
     InfoBarPosition,
-    ListWidget,
     CardWidget,
     IconWidget,
 )
@@ -452,7 +451,7 @@ class DevicesPage(ScrollArea):
             try:
                 dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
                 timestamp = dt.strftime("%H:%M:%S")
-            except:
+            except ValueError:
                 timestamp = timestamp[:8] if len(timestamp) > 8 else timestamp
 
         level = log.get("level", "INFO").upper()

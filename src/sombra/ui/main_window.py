@@ -1,11 +1,8 @@
 """Main application window with Fluent Design navigation."""
 
 import logging
-import sys
-from pathlib import Path
-from PySide6.QtCore import Qt, Slot, QTimer
-from PySide6.QtGui import QIcon, QColor, QCloseEvent
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Slot, QTimer
+from PySide6.QtGui import QColor, QCloseEvent
 
 from qfluentwidgets import (
     FluentWindow,
@@ -16,7 +13,6 @@ from qfluentwidgets import (
     Theme,
     InfoBar,
     InfoBarPosition,
-    isDarkTheme,
     StateToolTip,
 )
 

@@ -4,34 +4,29 @@ import logging
 import time
 
 from PySide6.QtCore import Qt, Slot, QTimer
-from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QScrollArea,
-    QFrame,
 )
 
 from qfluentwidgets import (
     ScrollArea,
     TitleLabel,
-    BodyLabel,
     CaptionLabel,
     PrimaryPushButton,
     LineEdit,
     TransparentToolButton,
     FluentIcon,
-    isDarkTheme,
 )
 
 from ..components.voice_button import FluentVoiceButton
-from ..components.chat_bubble import ChatBubble, ThinkingBubble, StreamingBubble
+from ..components.chat_bubble import ChatBubble, StreamingBubble
 from ..components.status_card import ConnectionStatusCard
 from ..components.chat_sidebar import ChatSidebar
 from ..styles.theme import SciFiTheme
 
-from ...data.models import Conversation, Message
+from ...data.models import Conversation
 from ...data.chat_repository import ChatRepository
 
 from ...services.audio_service import AudioService

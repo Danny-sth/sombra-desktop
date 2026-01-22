@@ -5,9 +5,8 @@ import os
 import subprocess
 import sys
 import tempfile
-import zipfile
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import httpx
 from packaging import version

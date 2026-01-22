@@ -1,13 +1,11 @@
 """Chat message bubble components."""
 
 import re
-from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QTextCursor
-from PySide6.QtWidgets import QVBoxLayout, QWidget, QTextBrowser, QLabel, QHBoxLayout
+from PySide6.QtWidgets import QVBoxLayout, QWidget, QTextBrowser, QHBoxLayout
 
-from qfluentwidgets import CardWidget, BodyLabel, CaptionLabel, isDarkTheme, TransparentToolButton, FluentIcon
+from qfluentwidgets import CardWidget, CaptionLabel, isDarkTheme, TransparentToolButton, FluentIcon
 
 from ..styles.theme import SciFiTheme
 

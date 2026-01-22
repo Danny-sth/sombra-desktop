@@ -14,7 +14,6 @@ from qfluentwidgets import (
     SimpleCardWidget,
     IconWidget,
     FluentIcon,
-    isDarkTheme,
 )
 
 from sombra import __version__

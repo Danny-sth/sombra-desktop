@@ -131,12 +131,12 @@ class SciFiTheme:
     """
 
     # Status card styles
-    STATUS_CONNECTED = f"""
-        CardWidget {{
+    STATUS_CONNECTED = """
+        CardWidget {
             background: rgba(78, 204, 163, 0.08);
             border: 1px solid rgba(78, 204, 163, 0.25);
             border-radius: 8px;
-        }}
+        }
     """
 
     STATUS_DISCONNECTED = f"""

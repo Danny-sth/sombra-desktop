@@ -1,7 +1,6 @@
 """Text input widget for manual text entry."""
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QPushButton, QWidget
 
 
