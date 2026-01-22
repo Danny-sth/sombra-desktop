@@ -1,4 +1,4 @@
-"""Status indicator card components."""
+"""Status indicator card components with Sombra branding."""
 
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QColor
@@ -12,9 +12,28 @@ from qfluentwidgets import (
     FluentIcon,
 )
 
+from sombra.themes.colors import (
+    SOMBRA_PRIMARY,
+    SOMBRA_PRIMARY_LIGHT,
+    SOMBRA_PRIMARY_MUTED,
+    BORDER_RADIUS,
+    TRANSPARENCY,
+    DARK_PALETTE,
+)
+
+
+# Sombra brand RGB values
+_PRIMARY_RGB = "233, 69, 96"
+_SUCCESS_RGB = "78, 204, 163"
+_WARNING_RGB = "249, 168, 37"
+_ERROR_RGB = "255, 107, 107"
+
 
 class StatusCard(SimpleCardWidget):
-    """Generic status card with icon, title, and value."""
+    """Generic status card with icon, title, and value.
+
+    Uses Sombra branding with glassmorphism effects.
+    """
 
     def __init__(
         self,
@@ -29,6 +48,7 @@ class StatusCard(SimpleCardWidget):
         self._value = value
 
         self._setup_ui(icon)
+        self._apply_style()
 
     def _setup_ui(self, icon: FluentIcon) -> None:
         """Build the card UI."""
@@ -36,7 +56,7 @@ class StatusCard(SimpleCardWidget):
         layout.setContentsMargins(20, 16, 20, 16)
         layout.setSpacing(16)
 
-        # Icon
+        # Icon with Sombra accent
         self._icon_widget = IconWidget(icon)
         self._icon_widget.setFixedSize(32, 32)
         layout.addWidget(self._icon_widget)
@@ -46,14 +66,29 @@ class StatusCard(SimpleCardWidget):
         text_layout.setSpacing(4)
 
         self._title_label = BodyLabel(self._title)
+        self._title_label.setStyleSheet(f"color: {DARK_PALETTE['text_primary']};")
         text_layout.addWidget(self._title_label)
 
         self._value_label = CaptionLabel(self._value)
-        self._value_label.setStyleSheet("color: #888888;")
+        self._value_label.setStyleSheet(f"color: {DARK_PALETTE['text_secondary']};")
         text_layout.addWidget(self._value_label)
 
         layout.addLayout(text_layout)
         layout.addStretch()
+
+    def _apply_style(self) -> None:
+        """Apply Sombra card styling."""
+        self.setStyleSheet(f"""
+            SimpleCardWidget {{
+                background-color: {TRANSPARENCY["card_bg"]};
+                border: 1px solid rgba({_PRIMARY_RGB}, 0.12);
+                border-radius: {BORDER_RADIUS["lg"]};
+            }}
+            SimpleCardWidget:hover {{
+                background-color: {TRANSPARENCY["card_bg_hover"]};
+                border-color: rgba({_PRIMARY_RGB}, 0.22);
+            }}
+        """)
 
     def set_value(self, value: str) -> None:
         """Update the status value."""
@@ -66,12 +101,12 @@ class StatusCard(SimpleCardWidget):
 
 
 class ConnectionStatusCard(SimpleCardWidget):
-    """Compact connection status indicator card."""
+    """Compact connection status indicator card with Sombra branding."""
 
-    # Status colors
-    COLOR_CONNECTED = QColor("#4ecca3")  # Green
-    COLOR_DISCONNECTED = QColor("#e94560")  # Red
-    COLOR_CONNECTING = QColor("#f9a825")  # Yellow/Orange
+    # Status colors - using Sombra palette
+    COLOR_CONNECTED = QColor(DARK_PALETTE["success"])      # #4ecca3
+    COLOR_DISCONNECTED = QColor(SOMBRA_PRIMARY)            # #e94560
+    COLOR_CONNECTING = QColor(DARK_PALETTE["warning"])     # #f9a825
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -79,6 +114,7 @@ class ConnectionStatusCard(SimpleCardWidget):
         self._status = "Connecting..."
 
         self._setup_ui()
+        self._apply_base_style()
 
     def _setup_ui(self) -> None:
         """Build the card UI."""
@@ -95,11 +131,22 @@ class ConnectionStatusCard(SimpleCardWidget):
 
         # Status text
         self._status_label = BodyLabel("Connecting...")
+        self._status_label.setStyleSheet(f"color: {DARK_PALETTE['text_primary']};")
         layout.addWidget(self._status_label)
         layout.addStretch()
 
         # Update initial state
         self._update_visual("connecting")
+
+    def _apply_base_style(self) -> None:
+        """Apply base card styling."""
+        self.setStyleSheet(f"""
+            SimpleCardWidget {{
+                background-color: {TRANSPARENCY["card_bg"]};
+                border: 1px solid rgba({_PRIMARY_RGB}, 0.12);
+                border-radius: {BORDER_RADIUS["md"]};
+            }}
+        """)
 
     @Slot(str)
     def set_status(self, status: str) -> None:
@@ -124,19 +171,35 @@ class ConnectionStatusCard(SimpleCardWidget):
         if state == "connected":
             color = self.COLOR_CONNECTED
             dot = ""
+            border_rgb = _SUCCESS_RGB
         elif state == "error":
             color = self.COLOR_DISCONNECTED
             dot = ""
+            border_rgb = _PRIMARY_RGB
         else:
             color = self.COLOR_CONNECTING
             dot = ""
+            border_rgb = _WARNING_RGB
 
         self._dot_label.setText(dot)
         self._dot_label.setStyleSheet(f"color: {color.name()}; font-size: 16px;")
 
+        # Update card border to match status
+        self.setStyleSheet(f"""
+            SimpleCardWidget {{
+                background-color: {TRANSPARENCY["card_bg"]};
+                border: 1px solid rgba({border_rgb}, 0.25);
+                border-radius: {BORDER_RADIUS["md"]};
+            }}
+            SimpleCardWidget:hover {{
+                background-color: {TRANSPARENCY["card_bg_hover"]};
+                border-color: rgba({border_rgb}, 0.40);
+            }}
+        """)
+
 
 class RecordingStatusCard(SimpleCardWidget):
-    """Recording status indicator card."""
+    """Recording status indicator card with Sombra branding."""
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -144,6 +207,7 @@ class RecordingStatusCard(SimpleCardWidget):
         self._is_recording = False
 
         self._setup_ui()
+        self._apply_base_style()
 
     def _setup_ui(self) -> None:
         """Build the card UI."""
@@ -160,10 +224,21 @@ class RecordingStatusCard(SimpleCardWidget):
 
         # Status text
         self._status_label = BodyLabel("Idle")
+        self._status_label.setStyleSheet(f"color: {DARK_PALETTE['text_primary']};")
         layout.addWidget(self._status_label)
         layout.addStretch()
 
         self._update_visual(False)
+
+    def _apply_base_style(self) -> None:
+        """Apply base card styling."""
+        self.setStyleSheet(f"""
+            SimpleCardWidget {{
+                background-color: {TRANSPARENCY["card_bg"]};
+                border: 1px solid rgba({_PRIMARY_RGB}, 0.12);
+                border-radius: {BORDER_RADIUS["md"]};
+            }}
+        """)
 
     @Slot(bool)
     def set_recording(self, is_recording: bool) -> None:
@@ -175,16 +250,30 @@ class RecordingStatusCard(SimpleCardWidget):
         """Update visual appearance."""
         if is_recording:
             self._dot_label.setText("")
-            self._dot_label.setStyleSheet("color: #e94560; font-size: 16px;")
+            self._dot_label.setStyleSheet(f"color: {SOMBRA_PRIMARY}; font-size: 16px;")
             self._status_label.setText("Recording...")
+            self._status_label.setStyleSheet(f"color: {SOMBRA_PRIMARY};")
+
+            # Recording state - highlight with Sombra pink border
+            self.setStyleSheet(f"""
+                SimpleCardWidget {{
+                    background-color: rgba({_PRIMARY_RGB}, 0.08);
+                    border: 1px solid rgba({_PRIMARY_RGB}, 0.35);
+                    border-radius: {BORDER_RADIUS["md"]};
+                }}
+            """)
         else:
             self._dot_label.setText("")
-            self._dot_label.setStyleSheet("color: #888888; font-size: 16px;")
+            self._dot_label.setStyleSheet(f"color: {DARK_PALETTE['text_disabled']}; font-size: 16px;")
             self._status_label.setText("Idle")
+            self._status_label.setStyleSheet(f"color: {DARK_PALETTE['text_secondary']};")
+
+            # Idle state - normal styling
+            self._apply_base_style()
 
 
 class WakeWordStatusCard(SimpleCardWidget):
-    """Wake word detection status card."""
+    """Wake word detection status card with Sombra branding."""
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -192,6 +281,7 @@ class WakeWordStatusCard(SimpleCardWidget):
         self._is_listening = False
 
         self._setup_ui()
+        self._apply_base_style()
 
     def _setup_ui(self) -> None:
         """Build the card UI."""
@@ -208,8 +298,19 @@ class WakeWordStatusCard(SimpleCardWidget):
 
         # Status text
         self._status_label = BodyLabel("Wake Word: Off")
+        self._status_label.setStyleSheet(f"color: {DARK_PALETTE['text_secondary']};")
         layout.addWidget(self._status_label)
         layout.addStretch()
+
+    def _apply_base_style(self) -> None:
+        """Apply base card styling."""
+        self.setStyleSheet(f"""
+            SimpleCardWidget {{
+                background-color: {TRANSPARENCY["card_bg"]};
+                border: 1px solid rgba({_PRIMARY_RGB}, 0.12);
+                border-radius: {BORDER_RADIUS["md"]};
+            }}
+        """)
 
     @Slot(bool)
     def set_listening(self, is_listening: bool) -> None:
@@ -218,7 +319,23 @@ class WakeWordStatusCard(SimpleCardWidget):
 
         if is_listening:
             self._status_label.setText("Wake Word: Listening")
-            self._status_label.setStyleSheet("color: #4ecca3;")
+            self._status_label.setStyleSheet(f"color: {DARK_PALETTE['success']};")
+
+            # Listening state - highlight with success border
+            self.setStyleSheet(f"""
+                SimpleCardWidget {{
+                    background-color: rgba({_SUCCESS_RGB}, 0.08);
+                    border: 1px solid rgba({_SUCCESS_RGB}, 0.30);
+                    border-radius: {BORDER_RADIUS["md"]};
+                }}
+                SimpleCardWidget:hover {{
+                    background-color: rgba({_SUCCESS_RGB}, 0.12);
+                    border-color: rgba({_SUCCESS_RGB}, 0.40);
+                }}
+            """)
         else:
             self._status_label.setText("Wake Word: Off")
-            self._status_label.setStyleSheet("color: #888888;")
+            self._status_label.setStyleSheet(f"color: {DARK_PALETTE['text_secondary']};")
+
+            # Off state - normal styling
+            self._apply_base_style()
