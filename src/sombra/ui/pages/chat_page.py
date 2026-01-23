@@ -355,11 +355,11 @@ class ChatPage(QWidget):
 
         self._load_conversation(conversation_id)
 
-        # Update session
+        # Update session to match conversation's session_id
         if self._current_conversation:
             from ...core.session import get_session_manager
             session = get_session_manager()
-            session._session_id = self._current_conversation.session_id
+            session.set_session_id(self._current_conversation.session_id)
 
     @Slot(str, str)
     def _on_conversation_renamed(self, conversation_id: str, new_title: str) -> None:

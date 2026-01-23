@@ -46,21 +46,22 @@ class SessionManager:
         return self._created_at
 
     def regenerate(self) -> str:
-        """Reset session to configured ID from settings.
-
-        Unlike generating a new UUID, this uses the configured session_id
-        from settings to maintain owner status across conversations.
+        """Generate a new unique session ID for a new conversation.
 
         Returns:
-            The session ID (from settings or generated).
+            The new session ID.
         """
-        settings = get_settings()
-        if settings.sombra_session_id:
-            self._session_id = settings.sombra_session_id
-        else:
-            self._session_id = self._generate_session_id()
+        self._session_id = self._generate_session_id()
         self._created_at = datetime.now()
         return self._session_id
+
+    def set_session_id(self, session_id: str) -> None:
+        """Set session ID (for switching conversations).
+
+        Args:
+            session_id: The session ID to use.
+        """
+        self._session_id = session_id
 
     def get_headers(self) -> dict[str, str]:
         """Get HTTP headers for API requests.
@@ -75,8 +76,11 @@ class SessionManager:
 
     @staticmethod
     def _generate_session_id() -> str:
-        """Generate a unique session ID."""
-        return f"sombra-desktop-{uuid.uuid4().hex[:8]}"
+        """Generate a unique session ID with owner prefix.
+
+        Uses 'owner-' prefix so server recognizes as owner session.
+        """
+        return f"owner-{uuid.uuid4().hex[:8]}"
 
     def __repr__(self) -> str:
         return f"SessionManager(session_id={self._session_id!r}, created_at={self._created_at})"
