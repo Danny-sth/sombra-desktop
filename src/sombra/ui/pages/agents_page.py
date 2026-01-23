@@ -14,7 +14,6 @@ from qfluentwidgets import (
 )
 
 from ..components.agent_status_card import AgentStatus, AgentStatusCard
-from ..styles.theme import SciFiTheme
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +91,6 @@ class AgentsPage(ScrollArea):
         parent_layout.addWidget(header)
 
         subtitle = BodyLabel("Monitor and manage your AI development agents")
-        subtitle.setStyleSheet(f"color: {SciFiTheme.TEXT_SECONDARY};")
         parent_layout.addWidget(subtitle)
 
     def _create_agents_grid(self, parent_layout: QVBoxLayout) -> None:

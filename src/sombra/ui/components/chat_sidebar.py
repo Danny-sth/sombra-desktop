@@ -73,23 +73,8 @@ class ConversationItem(QFrame):
 
     def _update_style(self) -> None:
         """Update visual style based on state."""
-        if self._is_active:
-            bg_color = "rgba(233, 69, 96, 0.15)" if isDarkTheme() else "rgba(233, 69, 96, 0.1)"
-            border = "2px solid #e94560"
-        else:
-            bg_color = "rgba(255, 255, 255, 0.03)" if isDarkTheme() else "rgba(0, 0, 0, 0.02)"
-            border = "1px solid transparent"
-
-        self.setStyleSheet(f"""
-            ConversationItem {{
-                background-color: {bg_color};
-                border: {border};
-                border-radius: 8px;
-            }}
-            ConversationItem:hover {{
-                background-color: {'rgba(255, 255, 255, 0.08)' if isDarkTheme() else 'rgba(0, 0, 0, 0.05)'};
-            }}
-        """)
+        # Let qfluentwidgets handle most styling
+        pass
 
     def set_active(self, is_active: bool) -> None:
         """Set active state."""
@@ -229,15 +214,8 @@ class ChatSidebar(QFrame):
 
     def _update_style(self) -> None:
         """Update sidebar styling."""
-        border_color = "rgba(255, 255, 255, 0.1)" if isDarkTheme() else "rgba(0, 0, 0, 0.1)"
-        bg_color = "rgba(30, 30, 30, 0.95)" if isDarkTheme() else "rgba(250, 250, 250, 0.95)"
-
-        self.setStyleSheet(f"""
-            #chatSidebar {{
-                background-color: {bg_color};
-                border-right: 1px solid {border_color};
-            }}
-        """)
+        # Let qfluentwidgets handle most styling
+        pass
 
     def toggle(self) -> None:
         """Toggle expanded/collapsed state."""

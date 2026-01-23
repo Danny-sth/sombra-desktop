@@ -15,8 +15,6 @@ from qfluentwidgets import (
     StrongBodyLabel,
 )
 
-from ..styles.theme import SciFiTheme
-
 
 class AgentStatus(Enum):
     """Agent online/offline status."""
@@ -28,7 +26,7 @@ class AgentStatus(Enum):
 class StatusBadge(QFrame):
     """Small status indicator badge with dot and label."""
 
-    # Status colors matching SciFiTheme
+    # Status colors
     COLORS = {
         AgentStatus.ONLINE: "#4ecca3",   # Green - connected
         AgentStatus.OFFLINE: "#555566",  # Muted gray
@@ -93,7 +91,6 @@ class AgentStatusCard(SimpleCardWidget):
     """Card displaying agent information with status indicator.
 
     Shows agent name, description, icon, and online/offline status badge.
-    Uses SciFiTheme cyberpunk colors.
     """
 
     # Signal emitted when card is clicked
@@ -148,7 +145,6 @@ class AgentStatusCard(SimpleCardWidget):
 
         # Agent name
         self._name_label = StrongBodyLabel(self._name)
-        self._name_label.setStyleSheet(f"color: {SciFiTheme.TEXT_PRIMARY};")
         top_row.addWidget(self._name_label)
 
         top_row.addStretch()
@@ -162,31 +158,14 @@ class AgentStatusCard(SimpleCardWidget):
         # Description
         self._desc_label = CaptionLabel(self._description)
         self._desc_label.setWordWrap(True)
-        self._desc_label.setStyleSheet(f"color: {SciFiTheme.TEXT_SECONDARY};")
         main_layout.addWidget(self._desc_label)
 
         main_layout.addStretch()
 
     def _apply_theme(self) -> None:
-        """Apply cyberpunk theme styling."""
-        # Base card style with glassmorphism effect
-        accent_rgb = SciFiTheme.CYAN_RGB if self._status == AgentStatus.ONLINE else "100, 100, 120"
-
-        self.setStyleSheet(f"""
-            AgentStatusCard {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 rgba({accent_rgb}, 0.08),
-                    stop:1 rgba({accent_rgb}, 0.02));
-                border: 1px solid rgba({accent_rgb}, 0.2);
-                border-radius: 12px;
-            }}
-            AgentStatusCard:hover {{
-                border: 1px solid rgba({SciFiTheme.CYAN_RGB}, 0.4);
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 rgba({SciFiTheme.CYAN_RGB}, 0.12),
-                    stop:1 rgba({SciFiTheme.CYAN_RGB}, 0.04));
-            }}
-        """)
+        """Apply default qfluentwidgets styling."""
+        # Let qfluentwidgets handle the styling
+        pass
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Handle mouse press to emit clicked signal."""

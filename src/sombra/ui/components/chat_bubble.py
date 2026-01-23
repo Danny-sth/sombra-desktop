@@ -7,8 +7,6 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget, QTextBrowser, QHBoxLayout
 
 from qfluentwidgets import CardWidget, CaptionLabel, isDarkTheme, TransparentToolButton, FluentIcon
 
-from ..styles.theme import SciFiTheme
-
 try:
     import markdown
     from pygments import highlight
@@ -59,13 +57,9 @@ class ChatBubble(CardWidget):
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(8)
 
-        # Role label with Sci-Fi colors
+        # Role label
         role_text = "You" if self._is_user else "Sombra"
         self._role_label = CaptionLabel(role_text)
-
-        # Set role color - magenta for user, cyan for Sombra
-        role_color = SciFiTheme.MAGENTA if self._is_user else SciFiTheme.CYAN
-        self._role_label.setStyleSheet(f"color: {role_color}; font-weight: 600;")
 
         header_layout.addWidget(self._role_label)
         header_layout.addStretch()
@@ -108,13 +102,9 @@ class ChatBubble(CardWidget):
         layout.addWidget(self._content_browser)
 
     def _apply_style(self) -> None:
-        """Apply Sci-Fi bubble styling based on sender."""
-        if self._is_user:
-            # User bubble - magenta accent with glassmorphism
-            self.setStyleSheet(SciFiTheme.USER_BUBBLE)
-        else:
-            # Sombra bubble - cyan accent with glassmorphism
-            self.setStyleSheet(SciFiTheme.SOMBRA_BUBBLE)
+        """Apply default qfluentwidgets styling."""
+        # Let qfluentwidgets handle the styling
+        pass
 
     def _render_content(self) -> None:
         """Render markdown content to HTML."""
@@ -132,7 +122,7 @@ class ChatBubble(CardWidget):
             html = html.replace("\n", "<br>")
 
         # Text color based on theme
-        text_color = SciFiTheme.get_text_color(isDarkTheme())
+        text_color = "#eaeaea" if isDarkTheme() else "#212121"
 
         styled_html = f"""
         <div style="font-family: 'Segoe UI', sans-serif; font-size: 14px;
@@ -237,14 +227,11 @@ class ThinkingBubble(CardWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 12, 16, 12)
 
-        # Thinking label with muted cyan
+        # Thinking label
         self._label = CaptionLabel(text if text else "Thinking...")
-        self._label.setStyleSheet(f"color: {SciFiTheme.TEXT_SECONDARY}; font-style: italic;")
+        self._label.setStyleSheet("font-style: italic;")
         layout.addWidget(self._label)
         layout.addStretch()
-
-        # Sci-Fi style
-        self.setStyleSheet(SciFiTheme.THINKING_BUBBLE)
 
     def set_text(self, text: str) -> None:
         """Update thinking text."""
@@ -269,20 +256,22 @@ class StreamingBubble(CardWidget):
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(8)
 
-        # Role label with cyan accent
+        # Role label
         self._role_label = CaptionLabel("Sombra")
-        self._role_label.setStyleSheet(f"color: {SciFiTheme.CYAN}; font-weight: 600;")
         layout.addWidget(self._role_label)
 
         # Content browser with transparent background
         self._content_browser = QTextBrowser()
         self._content_browser.setOpenExternalLinks(True)
         self._content_browser.setReadOnly(True)
-        self._content_browser.setStyleSheet(SciFiTheme.TEXT_BROWSER)
+        self._content_browser.setStyleSheet("""
+            QTextBrowser {
+                background-color: transparent;
+                border: none;
+                padding: 0;
+            }
+        """)
         layout.addWidget(self._content_browser)
-
-        # Sci-Fi streaming style
-        self.setStyleSheet(SciFiTheme.STREAMING_BUBBLE)
 
     def start_streaming(self) -> None:
         """Start streaming mode."""
@@ -309,7 +298,7 @@ class StreamingBubble(CardWidget):
         if not self._content:
             return
 
-        text_color = SciFiTheme.get_text_color(isDarkTheme())
+        text_color = "#eaeaea" if isDarkTheme() else "#212121"
 
         if HAS_MARKDOWN:
             # Process markdown
