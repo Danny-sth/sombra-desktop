@@ -1,7 +1,7 @@
 """Main application window with Fluent Design navigation."""
 
 import logging
-from PySide6.QtCore import Slot, QTimer
+from PySide6.QtCore import Qt, Slot, QTimer
 from PySide6.QtGui import QColor, QCloseEvent
 
 from qfluentwidgets import (
@@ -99,6 +99,10 @@ class MainWindow(FluentWindow):
         icon = get_app_icon()
         if not icon.isNull():
             self.setWindowIcon(icon)
+
+        # Enable window transparency (requires compositor on Linux)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowOpacity(0.95)
 
         # Start maximized
         self.showMaximized()

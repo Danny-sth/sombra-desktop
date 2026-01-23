@@ -1,83 +1,29 @@
-"""Theme manager using qt-material for Material Design styling."""
+"""Simplified theme manager - default qfluentwidgets styling."""
 
 from typing import Optional
 
 from PySide6.QtWidgets import QApplication
-from qt_material import apply_stylesheet, list_themes
 
 from ..config.settings import get_settings
 from .colors import DARK_PALETTE, LIGHT_PALETTE
 
 
 class ThemeManager:
-    """Manages application themes using qt-material.
+    """Minimal theme manager - tracks theme preference only.
 
-    Provides Material Design styling with dark and light theme support.
+    All styling delegated to qfluentwidgets defaults.
     """
 
-    # Map simple theme names to qt-material theme files
     THEME_MAP = {
-        "dark": "dark_teal.xml",
-        "light": "light_teal.xml",
+        "dark": "dark",
+        "light": "light",
     }
-
-    # Custom CSS to append for app-specific widgets
-    CUSTOM_CSS = """
-    /* Voice button - circular style */
-    QPushButton#voiceButton {
-        min-width: 80px;
-        max-width: 80px;
-        min-height: 80px;
-        max-height: 80px;
-        border-radius: 40px;
-        font-size: 24px;
-    }
-
-    QPushButton#voiceButton:pressed,
-    QPushButton#voiceButton[recording="true"] {
-        background-color: #e94560;
-        border-color: #ff6b8a;
-    }
-
-    /* Title styling */
-    QLabel#titleLabel {
-        font-size: 20px;
-        font-weight: bold;
-    }
-
-    QLabel#subtitleLabel {
-        font-size: 12px;
-        opacity: 0.7;
-    }
-
-    /* Output display */
-    QTextBrowser#outputDisplay {
-        border-radius: 8px;
-        padding: 12px;
-    }
-
-    /* Status bar buttons */
-    QPushButton#themeButton,
-    QPushButton#settingsButton {
-        min-width: 36px;
-        max-width: 36px;
-        min-height: 36px;
-        max-height: 36px;
-        border-radius: 18px;
-        font-size: 16px;
-    }
-    """
 
     def __init__(self, app: QApplication):
-        """Initialize theme manager.
-
-        Args:
-            app: The QApplication instance.
-        """
+        """Initialize theme manager."""
         self._app = app
         self._current_theme: str = "dark"
 
-        # Load initial theme from settings
         settings = get_settings()
         if settings.theme in self.THEME_MAP:
             self._current_theme = settings.theme
@@ -93,22 +39,9 @@ class ThemeManager:
         return LIGHT_PALETTE if self._current_theme == "light" else DARK_PALETTE
 
     def apply_theme(self, theme_name: str) -> None:
-        """Apply a Material Design theme.
-
-        Args:
-            theme_name: Name of the theme ('dark' or 'light').
-        """
+        """Apply theme (stores preference, qfluentwidgets handles styling)."""
         if theme_name not in self.THEME_MAP:
             theme_name = "dark"
-
-        # Apply qt-material base theme
-        material_theme = self.THEME_MAP[theme_name]
-        apply_stylesheet(self._app, theme=material_theme, extra={'density_scale': '-1'})
-
-        # Append custom CSS for app-specific widgets
-        current_style = self._app.styleSheet()
-        self._app.setStyleSheet(current_style + self.CUSTOM_CSS)
-
         self._current_theme = theme_name
 
     def toggle_theme(self) -> str:
@@ -134,12 +67,8 @@ class ThemeManager:
 
     @staticmethod
     def available_themes() -> list[str]:
-        """List all available qt-material themes.
-
-        Returns:
-            List of theme names.
-        """
-        return list_themes()
+        """List available themes."""
+        return ["dark", "light"]
 
 
 # Global theme manager instance
