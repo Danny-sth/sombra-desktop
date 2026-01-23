@@ -516,9 +516,10 @@ class ChatPage(QWidget):
 
     @Slot(str)
     def _on_thinking_update(self, thinking: str) -> None:
-        """Handle thinking update."""
-        # Could show thinking indicator
-        pass
+        """Handle thinking update - show in status and streaming bubble."""
+        # Update status label with thinking
+        self._status_label.setText(f"💭 {thinking[:80]}..." if len(thinking) > 80 else f"💭 {thinking}")
+        self._status_label.setStyleSheet("color: #888888; font-style: italic;")
 
     @Slot(str)
     def _on_response_received(self, response: str) -> None:
