@@ -49,13 +49,13 @@ class ChatBubble(CardWidget):
     def _setup_ui(self) -> None:
         """Build the bubble UI."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 12, 16, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(4)
 
         # Header row with role label and play button
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(8)
+        header_layout.setSpacing(4)
 
         # Role label
         role_text = "You" if self._is_user else "Sombra"
@@ -225,7 +225,7 @@ class ThinkingBubble(CardWidget):
         self._text = text
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setContentsMargins(12, 6, 12, 6)
 
         # Thinking label
         self._label = CaptionLabel(text if text else "Thinking...")
@@ -251,10 +251,10 @@ class StreamingBubble(CardWidget):
         self._setup_ui()
 
     def _setup_ui(self) -> None:
-        """Build the streaming bubble UI with Sci-Fi styling."""
+        """Build the streaming bubble UI."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 12, 16, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(4)
 
         # Role label
         self._role_label = CaptionLabel("Sombra")

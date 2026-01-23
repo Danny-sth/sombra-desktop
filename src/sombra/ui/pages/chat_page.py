@@ -115,8 +115,8 @@ class ChatPage(QWidget):
         scroll_area.setWidget(container)
 
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(40, 24, 40, 24)
-        layout.setSpacing(16)
+        layout.setContentsMargins(20, 12, 20, 12)
+        layout.setSpacing(8)
 
         # Header
         header = self._create_header()
@@ -129,7 +129,7 @@ class ChatPage(QWidget):
         # Chat area
         self._chat_container = QWidget()
         self._chat_layout = QVBoxLayout(self._chat_container)
-        self._chat_layout.setSpacing(12)
+        self._chat_layout.setSpacing(6)
         self._chat_layout.setContentsMargins(0, 0, 0, 0)
         self._chat_layout.addStretch()
         layout.addWidget(self._chat_container, 1)
