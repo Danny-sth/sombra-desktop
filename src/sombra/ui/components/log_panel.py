@@ -3,18 +3,16 @@
 import json
 from datetime import datetime
 
-from PySide6.QtCore import Slot, QThread, Signal
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel
-
+import httpx
+from PySide6.QtCore import QThread, Signal, Slot
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
 from qfluentwidgets import (
-    TextEdit,
-    TransparentToolButton,
     FluentIcon,
+    TextEdit,
     ToolTipFilter,
     ToolTipPosition,
+    TransparentToolButton,
 )
-
-import httpx
 
 from ...config.settings import get_settings
 

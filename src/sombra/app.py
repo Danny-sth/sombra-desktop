@@ -6,15 +6,13 @@ from typing import Optional
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication
+from qfluentwidgets import Theme, setTheme, setThemeColor
 
-from qfluentwidgets import setTheme, setThemeColor, Theme
-
-from .config.settings import init_settings
+from .config.settings import get_settings, init_settings
 from .core.async_bridge import init_async_bridge
 from .core.events import init_event_hub
 from .core.session import init_session_manager
-from .config.settings import get_settings
-from .data.database import init_db, close_db
+from .data.database import close_db, init_db
 from .services.audio_service import AudioService
 from .services.hotkey_service import HotkeyService
 from .services.sombra_service import SombraService

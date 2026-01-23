@@ -5,29 +5,28 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from PySide6.QtCore import Qt, Slot, QThread, Signal, QTimer
+from PySide6.QtCore import Qt, QThread, QTimer, Signal, Slot
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QFrame,
     QHBoxLayout,
     QSplitter,
-    QFrame,
+    QVBoxLayout,
+    QWidget,
 )
-
 from qfluentwidgets import (
-    ScrollArea,
-    TitleLabel,
-    SubtitleLabel,
     BodyLabel,
-    StrongBodyLabel,
-    PrimaryPushButton,
-    TransparentPushButton,
-    TextEdit,
+    CardWidget,
     FluentIcon,
+    IconWidget,
     InfoBar,
     InfoBarPosition,
-    CardWidget,
-    IconWidget,
+    PrimaryPushButton,
+    ScrollArea,
+    StrongBodyLabel,
+    SubtitleLabel,
+    TextEdit,
+    TitleLabel,
+    TransparentPushButton,
 )
 
 from ...config.settings import get_settings

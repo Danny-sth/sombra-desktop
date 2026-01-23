@@ -10,19 +10,19 @@ Tests verify:
 - Navigation integration
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QVBoxLayout
-
 from qfluentwidgets import (
-    ScrollArea,
-    TitleLabel,
-    SubtitleLabel,
     BodyLabel,
-    SettingCardGroup,
+    ScrollArea,
     SettingCard,
+    SettingCardGroup,
     SimpleCardWidget,
+    SubtitleLabel,
+    TitleLabel,
 )
 
 

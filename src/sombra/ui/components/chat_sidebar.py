@@ -2,25 +2,24 @@
 
 from datetime import datetime, timedelta
 
-from PySide6.QtCore import Qt, Signal, Slot, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Signal, Slot
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
     QFrame,
-    QMenu,
+    QHBoxLayout,
     QInputDialog,
+    QMenu,
+    QVBoxLayout,
+    QWidget,
 )
-
 from qfluentwidgets import (
     BodyLabel,
     CaptionLabel,
-    TransparentToolButton,
-    PrimaryPushButton,
     FluentIcon,
-    isDarkTheme,
+    PrimaryPushButton,
     ScrollArea,
+    TransparentToolButton,
+    isDarkTheme,
 )
 
 from ...data.models import Conversation
@@ -87,7 +86,9 @@ class ConversationItem(QFrame):
                 border-radius: 8px;
             }}
             ConversationItem:hover {{
-                background-color: {'rgba(255, 255, 255, 0.08)' if isDarkTheme() else 'rgba(0, 0, 0, 0.05)'};
+                background-color: {
+                    'rgba(255, 255, 255, 0.08)' if isDarkTheme() else 'rgba(0, 0, 0, 0.05)'
+                };
             }}
         """)
 

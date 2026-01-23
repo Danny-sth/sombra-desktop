@@ -3,18 +3,16 @@
 import re
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QVBoxLayout, QWidget, QTextBrowser, QHBoxLayout
+from PySide6.QtWidgets import QHBoxLayout, QTextBrowser, QVBoxLayout, QWidget
+from qfluentwidgets import CaptionLabel, CardWidget, FluentIcon, TransparentToolButton, isDarkTheme
 
-from qfluentwidgets import CardWidget, CaptionLabel, isDarkTheme, TransparentToolButton, FluentIcon
-
-from ..styles.theme import SciFiTheme
 from sombra.themes.colors import (
+    BORDER_RADIUS,
     SOMBRA_PRIMARY,
     SOMBRA_PRIMARY_LIGHT,
-    SOMBRA_PRIMARY_MUTED,
-    BORDER_RADIUS,
-    TRANSPARENCY,
 )
+
+from ..styles.theme import SciFiTheme
 
 try:
     import markdown
@@ -171,7 +169,10 @@ class ChatBubble(CardWidget):
         <style>
             a {{ color: {SOMBRA_PRIMARY}; text-decoration: none; }}
             a:hover {{ color: {SOMBRA_PRIMARY_LIGHT}; text-decoration: underline; }}
-            code {{ background-color: rgba({_PRIMARY_RGB}, 0.10); padding: 2px 6px; border-radius: 4px; }}
+            code {{
+                background-color: rgba({_PRIMARY_RGB}, 0.10);
+                padding: 2px 6px; border-radius: 4px;
+            }}
         </style>
         <div style="font-family: 'Segoe UI', sans-serif; font-size: 14px;
                     line-height: 1.6; color: {text_color};">
@@ -224,15 +225,23 @@ class ChatBubble(CardWidget):
                 highlighted = highlight(code, lexer, formatter)
 
                 # Sombra-styled code block with rounded corners
-                return f'''<pre style="background-color: #12121f; padding: 12px;
-                    border-radius: {BORDER_RADIUS["md"]}; overflow-x: auto; margin: 8px 0;
-                    border: 1px solid rgba({_PRIMARY_RGB}, 0.15);"><code>{highlighted}</code></pre>'''
+                radius = BORDER_RADIUS["md"]
+                border = f"rgba({_PRIMARY_RGB}, 0.15)"
+                return (
+                    f'<pre style="background-color: #12121f; padding: 12px; '
+                    f'border-radius: {radius}; overflow-x: auto; margin: 8px 0; '
+                    f'border: 1px solid {border};"><code>{highlighted}</code></pre>'
+                )
 
             except Exception:
                 escaped = code.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                return f'''<pre style="background-color: #12121f; padding: 12px;
-                    border-radius: {BORDER_RADIUS["md"]};
-                    border: 1px solid rgba({_PRIMARY_RGB}, 0.15);"><code>{escaped}</code></pre>'''
+                radius = BORDER_RADIUS["md"]
+                border = f"rgba({_PRIMARY_RGB}, 0.15)"
+                return (
+                    f'<pre style="background-color: #12121f; padding: 12px; '
+                    f'border-radius: {radius}; border: 1px solid {border};">'
+                    f'<code>{escaped}</code></pre>'
+                )
 
         pattern = r"```(\w*)\n(.*?)```"
         return re.sub(pattern, highlight_match, content, flags=re.DOTALL)
@@ -376,7 +385,10 @@ class StreamingBubble(CardWidget):
         <style>
             a {{ color: {SOMBRA_PRIMARY}; text-decoration: none; }}
             a:hover {{ color: {SOMBRA_PRIMARY_LIGHT}; text-decoration: underline; }}
-            code {{ background-color: rgba({_PRIMARY_RGB}, 0.10); padding: 2px 6px; border-radius: 4px; }}
+            code {{
+                background-color: rgba({_PRIMARY_RGB}, 0.10);
+                padding: 2px 6px; border-radius: 4px;
+            }}
         </style>
         <div style="font-family: 'Segoe UI', sans-serif; font-size: 14px;
                     line-height: 1.6; color: {text_color};">

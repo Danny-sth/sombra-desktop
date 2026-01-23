@@ -2,10 +2,10 @@
 
 from .connection_indicator import ConnectionIndicator, ConnectionState
 from .footer import Footer
-from .voice_button import VoiceButton
 from .output_display import OutputDisplay
-from .text_input import TextInput
 from .status_bar import StatusBar
+from .text_input import TextInput
+from .voice_button import VoiceButton
 
 __all__ = [
     "ConnectionIndicator",

@@ -1,41 +1,40 @@
 """Main application window with Fluent Design navigation."""
 
 import logging
-from PySide6.QtCore import Slot, QTimer
-from PySide6.QtGui import QColor, QCloseEvent
 
+from PySide6.QtCore import QTimer, Slot
+from PySide6.QtGui import QCloseEvent, QColor
 from qfluentwidgets import (
-    FluentWindow,
-    NavigationItemPosition,
     FluentIcon,
-    setTheme,
-    setThemeColor,
-    Theme,
+    FluentWindow,
     InfoBar,
     InfoBarPosition,
+    NavigationItemPosition,
     StateToolTip,
+    Theme,
+    setTheme,
+    setThemeColor,
 )
 
+from ..config.settings import get_settings
+from ..core.async_bridge import get_async_bridge
+from ..services.audio_service import AudioService
+from ..services.hotkey_service import HotkeyService
+from ..services.remote_commands import init_remote_commands
+from ..services.sombra_service import SombraService
+from ..services.update_service import UpdateService
+from ..services.wakeword_service import WakeWordService
+from ..services.whisper_service import WhisperService
+from .pages.agents_page import AgentsPage
+from .pages.chat_page import ChatPage
+from .pages.devices_page import DevicesPage
+from .pages.home_page import HomePage
+from .pages.settings_page import SettingsPage
+from .pages.tasks_page import TasksPage
 from .system_tray import SystemTray
 from .utils import get_app_icon
 from .widgets.connection_indicator import ConnectionIndicator
 from .widgets.footer import Footer
-from .pages.home_page import HomePage
-from .pages.chat_page import ChatPage
-from .pages.agents_page import AgentsPage
-from .pages.tasks_page import TasksPage
-from .pages.devices_page import DevicesPage
-from .pages.settings_page import SettingsPage
-
-from ..core.async_bridge import get_async_bridge
-from ..services.audio_service import AudioService
-from ..services.whisper_service import WhisperService
-from ..services.sombra_service import SombraService
-from ..services.hotkey_service import HotkeyService
-from ..services.wakeword_service import WakeWordService
-from ..services.update_service import UpdateService
-from ..services.remote_commands import init_remote_commands
-from ..config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,6 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 from ... import __version__
 from ...themes.colors import DARK_PALETTE, LIGHT_PALETTE
 
-
 # GitHub repository URL
 GITHUB_URL = "https://github.com/Danny-sth/sombra-desktop"
 

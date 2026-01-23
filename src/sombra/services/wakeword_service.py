@@ -1,8 +1,8 @@
 """Wake word detection service using Picovoice Porcupine."""
 
 import logging
-import threading
 import os
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -21,8 +21,8 @@ except ImportError:
     PORCUPINE_AVAILABLE = False
 
 try:
-    import pyaudio
     import numpy as np
+    import pyaudio
     PYAUDIO_AVAILABLE = True
 except (ImportError, OSError):
     pyaudio = None
@@ -54,7 +54,8 @@ class WakeWordService(QObject):
 
         # Get settings
         settings = get_settings()
-        self._access_key = getattr(settings, 'porcupine_access_key', None) or os.getenv('PORCUPINE_ACCESS_KEY', '')
+        access_key = getattr(settings, 'porcupine_access_key', None)
+        self._access_key = access_key or os.getenv('PORCUPINE_ACCESS_KEY', '')
 
         # Model paths
         self._model_path = self._find_model_path("sombra.ppn")
@@ -103,7 +104,9 @@ class WakeWordService(QObject):
         """
         if not self.is_available:
             if not self._access_key:
-                self.error.emit("Porcupine access key not configured. Set PORCUPINE_ACCESS_KEY in .env")
+                self.error.emit(
+                    "Porcupine access key not configured. Set PORCUPINE_ACCESS_KEY in .env"
+                )
             elif not self._model_path:
                 self.error.emit("Wake word model not found")
             else:
@@ -204,7 +207,8 @@ class WakeWordService(QObject):
             while not self._stop_event.is_set():
                 try:
                     # Read audio chunk
-                    audio_data = stream.read(self._porcupine.frame_length, exception_on_overflow=False)
+                    frame_len = self._porcupine.frame_length
+                    audio_data = stream.read(frame_len, exception_on_overflow=False)
                     audio = np.frombuffer(audio_data, dtype=np.int16)
 
                     # Process with Porcupine

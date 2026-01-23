@@ -1,22 +1,21 @@
 """Settings page with Fluent Design setting cards."""
 
-from PySide6.QtCore import Qt, Slot, Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-
+from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 from qfluentwidgets import (
-    ScrollArea,
-    SettingCardGroup,
-    SettingCard,
-    SwitchSettingCard,
-    PushSettingCard,
-    HyperlinkCard,
-    PrimaryPushSettingCard,
+    ComboBox,
     FluentIcon,
-    setTheme,
-    Theme,
+    HyperlinkCard,
     InfoBar,
     InfoBarPosition,
-    ComboBox,
+    PrimaryPushSettingCard,
+    PushSettingCard,
+    ScrollArea,
+    SettingCard,
+    SettingCardGroup,
+    SwitchSettingCard,
+    Theme,
+    setTheme,
 )
 
 from ...config.settings import get_settings

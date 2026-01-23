@@ -2,25 +2,21 @@
 
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout
-
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import (
-    SimpleCardWidget,
     BodyLabel,
     CaptionLabel,
-    IconWidget,
     FluentIcon,
+    IconWidget,
+    SimpleCardWidget,
 )
 
 from sombra.themes.colors import (
-    SOMBRA_PRIMARY,
-    SOMBRA_PRIMARY_LIGHT,
-    SOMBRA_PRIMARY_MUTED,
     BORDER_RADIUS,
-    TRANSPARENCY,
     DARK_PALETTE,
+    SOMBRA_PRIMARY,
+    TRANSPARENCY,
 )
-
 
 # Sombra brand RGB values
 _PRIMARY_RGB = "233, 69, 96"
@@ -264,9 +260,11 @@ class RecordingStatusCard(SimpleCardWidget):
             """)
         else:
             self._dot_label.setText("")
-            self._dot_label.setStyleSheet(f"color: {DARK_PALETTE['text_disabled']}; font-size: 16px;")
+            text_disabled = DARK_PALETTE['text_disabled']
+            self._dot_label.setStyleSheet(f"color: {text_disabled}; font-size: 16px;")
             self._status_label.setText("Idle")
-            self._status_label.setStyleSheet(f"color: {DARK_PALETTE['text_secondary']};")
+            text_secondary = DARK_PALETTE['text_secondary']
+            self._status_label.setStyleSheet(f"color: {text_secondary};")
 
             # Idle state - normal styling
             self._apply_base_style()

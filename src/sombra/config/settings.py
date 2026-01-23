@@ -62,7 +62,8 @@ class Settings:
         self.start_minimized: bool = os.getenv("START_MINIMIZED", "false").lower() == "true"
 
         # Voice Input Settings
-        self.auto_send_on_silence: bool = os.getenv("AUTO_SEND_ON_SILENCE", "true").lower() == "true"
+        auto_send_env = os.getenv("AUTO_SEND_ON_SILENCE", "true")
+        self.auto_send_on_silence: bool = auto_send_env.lower() == "true"
 
     def _create_default_env(self, env_file: Path) -> None:
         """Create default .env file with production settings."""

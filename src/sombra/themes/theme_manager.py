@@ -5,26 +5,23 @@ Enhanced with Sombra branding, glassmorphism effects, and unified design system.
 
 from typing import Optional
 
-from PySide6.QtWidgets import QApplication, QWidget, QGraphicsBlurEffect
-from PySide6.QtCore import QPropertyAnimation, QEasingCurve
+from PySide6.QtWidgets import QApplication, QGraphicsBlurEffect, QWidget
 from qt_material import apply_stylesheet, list_themes
 
 from ..config.settings import get_settings
 from .colors import (
+    BORDER_RADIUS,
     DARK_PALETTE,
     LIGHT_PALETTE,
     SOMBRA_PRIMARY,
-    SOMBRA_PRIMARY_LIGHT,
     SOMBRA_PRIMARY_DARK,
+    SOMBRA_PRIMARY_LIGHT,
     SOMBRA_PRIMARY_MUTED,
     TRANSPARENCY,
-    BORDER_RADIUS,
-    SHADOWS,
-    BLUR,
-    get_transparency,
-    get_shadow,
-    get_radius,
     get_blur,
+    get_radius,
+    get_shadow,
+    get_transparency,
     hex_to_rgba,
 )
 

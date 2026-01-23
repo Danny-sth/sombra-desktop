@@ -10,11 +10,11 @@ Tests verify:
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout
 
 from sombra.ui.components.agent_status_card import (
-    AgentStatusCard,
     AgentStatus,
+    AgentStatusCard,
     StatusBadge,
 )
 from sombra.ui.styles.theme import SciFiTheme
@@ -422,8 +422,8 @@ class TestAgentStatusCard:
         class SimpleCardWidget has its own clicked signal that conflicts.
         Our implementation emits on mousePressEvent for left button.
         """
-        from PySide6.QtGui import QMouseEvent, QSinglePointEvent
         from PySide6.QtCore import QEvent, QPointF
+        from PySide6.QtGui import QMouseEvent
 
         signals_received = []
         default_card.clicked.connect(lambda x: signals_received.append(x))
@@ -445,8 +445,8 @@ class TestAgentStatusCard:
 
     def test_clicked_signal_different_agents(self, qtbot):
         """Test clicked signal emits correct agent_id for different agents."""
-        from PySide6.QtGui import QMouseEvent
         from PySide6.QtCore import QEvent, QPointF
+        from PySide6.QtGui import QMouseEvent
 
         agents = ["builder", "reviewer", "tester", "refactor"]
 
@@ -477,8 +477,8 @@ class TestAgentStatusCard:
 
     def test_right_click_does_not_emit_signal(self, qtbot, default_card):
         """Test right clicking card does not emit our clicked signal."""
-        from PySide6.QtGui import QMouseEvent
         from PySide6.QtCore import QEvent, QPointF
+        from PySide6.QtGui import QMouseEvent
 
         signals_received = []
         default_card.clicked.connect(lambda x: signals_received.append(x))

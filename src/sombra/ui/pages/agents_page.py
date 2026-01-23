@@ -5,7 +5,6 @@ from typing import TypedDict
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QGridLayout, QVBoxLayout, QWidget
-
 from qfluentwidgets import (
     BodyLabel,
     ScrollArea,

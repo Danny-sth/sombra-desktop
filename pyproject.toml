@@ -57,7 +57,18 @@ target-version = ["py310"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
+ignore = [
+    "N802",  # Qt overrides (closeEvent, paintEvent, etc.)
+    "N815",  # Qt property names (dotOpacity, audioLevel, etc.)
+    "E402",  # Module level import not at top (needed for some configs)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/sombra/services/update_service.py" = ["E501"]  # Batch script heredocs
+"test_vad.py" = ["E402"]  # Test file with sys.path setup
 
 [tool.mypy]
 python_version = "3.10"

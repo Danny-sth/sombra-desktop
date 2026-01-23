@@ -3,22 +3,20 @@
 import json
 from datetime import datetime
 
-from PySide6.QtCore import Qt, Slot, QThread, Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
-
+import httpx
+from PySide6.QtCore import Qt, QThread, Signal, Slot
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import (
-    ScrollArea,
-    TitleLabel,
-    SubtitleLabel,
-    PrimaryPushButton,
-    TransparentPushButton,
-    TextEdit,
     FluentIcon,
     InfoBar,
     InfoBarPosition,
+    PrimaryPushButton,
+    ScrollArea,
+    SubtitleLabel,
+    TextEdit,
+    TitleLabel,
+    TransparentPushButton,
 )
-
-import httpx
 
 
 class SSEWorker(QThread):

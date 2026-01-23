@@ -10,15 +10,14 @@ Tests verify:
 - Integration with SombraService status strings
 """
 
-import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout
 
+from sombra.themes.colors import DARK_PALETTE, LIGHT_PALETTE
 from sombra.ui.widgets.connection_indicator import (
     ConnectionIndicator,
     ConnectionState,
 )
-from sombra.themes.colors import DARK_PALETTE, LIGHT_PALETTE
 
 
 class TestConnectionState:
@@ -404,8 +403,8 @@ class TestConnectionIndicatorSignals:
 
     def test_clicked_signal_emits_on_left_click(self, qtbot):
         """Test clicked signal emits on left mouse click."""
-        from PySide6.QtGui import QMouseEvent
         from PySide6.QtCore import QEvent, QPointF
+        from PySide6.QtGui import QMouseEvent
 
         indicator = ConnectionIndicator()
         qtbot.addWidget(indicator)
@@ -430,8 +429,8 @@ class TestConnectionIndicatorSignals:
 
     def test_right_click_does_not_emit_clicked(self, qtbot):
         """Test right click does not emit clicked signal."""
-        from PySide6.QtGui import QMouseEvent
         from PySide6.QtCore import QEvent, QPointF
+        from PySide6.QtGui import QMouseEvent
 
         indicator = ConnectionIndicator()
         qtbot.addWidget(indicator)

@@ -10,12 +10,12 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Optional, Callable
+from typing import Any, Callable, Optional
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
-from ..core.logging_config import register_command_handler, get_ws_handler
+from ..core.logging_config import get_ws_handler, register_command_handler
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,8 @@ class RemoteCommandService:
         ws_handler = get_ws_handler()
         if ws_handler:
             # Send as a log entry with special type
-            logger.info(f"Command response: {command} -> success={success}, data_size={len(str(data)) if data else 0}")
+            data_size = len(str(data)) if data else 0
+            logger.info(f"Command response: {command} -> success={success}, size={data_size}")
 
             # Also emit as special log for server to catch
             response_logger = logging.getLogger("sombra.command_response")

@@ -1,11 +1,11 @@
 """Sombra Desktop UI pages."""
 
-from .home_page import HomePage
-from .chat_page import ChatPage
 from .agents_page import AgentsPage
-from .tasks_page import TasksPage
+from .chat_page import ChatPage
+from .home_page import HomePage
 from .logs_page import LogsPage
 from .settings_page import SettingsPage
+from .tasks_page import TasksPage
 
 __all__ = [
     "HomePage",

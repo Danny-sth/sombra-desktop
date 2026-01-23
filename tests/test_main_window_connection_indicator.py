@@ -7,8 +7,6 @@ Tests verify:
 - Click handler connection to check_connection_async
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
 
 from PySide6.QtCore import Qt
 
@@ -54,8 +52,8 @@ class TestConnectionIndicatorMainWindowIntegration:
 
     def test_connection_indicator_click_emits_signal(self, qtbot):
         """Test clicking indicator emits clicked signal for connection check."""
-        from PySide6.QtGui import QMouseEvent
         from PySide6.QtCore import QEvent, QPointF
+        from PySide6.QtGui import QMouseEvent
 
         indicator = ConnectionIndicator()
         qtbot.addWidget(indicator)

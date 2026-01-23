@@ -4,31 +4,30 @@ Uses unified Sombra branding with glassmorphism effects.
 """
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout
-
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QVBoxLayout, QWidget
 from qfluentwidgets import (
-    ScrollArea,
-    TitleLabel,
-    SubtitleLabel,
     BodyLabel,
     CaptionLabel,
-    PrimaryPushButton,
-    TransparentPushButton,
-    SimpleCardWidget,
-    IconWidget,
     FluentIcon,
+    IconWidget,
+    PrimaryPushButton,
+    ScrollArea,
+    SimpleCardWidget,
+    SubtitleLabel,
+    TitleLabel,
+    TransparentPushButton,
 )
 
 from sombra import __version__
 from sombra.themes.colors import (
+    BORDER_RADIUS,
+    DARK_PALETTE,
     SOMBRA_PRIMARY,
     SOMBRA_PRIMARY_LIGHT,
-    BORDER_RADIUS,
     TRANSPARENCY,
-    DARK_PALETTE,
 )
-from ..components.log_panel import LogPanel
 
+from ..components.log_panel import LogPanel
 
 # Sombra brand RGB values
 _PRIMARY_RGB = "233, 69, 96"

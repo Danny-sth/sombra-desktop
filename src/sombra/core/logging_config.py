@@ -12,7 +12,7 @@ import threading
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 import websockets
 from websockets.exceptions import WebSocketException
@@ -169,7 +169,8 @@ class WebSocketLogHandler(logging.Handler):
     async def _receive_commands(self, ws):
         """Receive and handle commands from server."""
         logger = logging.getLogger(__name__)
-        logger.info(f"Command receiver started, registered handlers: {list(self._command_handlers.keys())}")
+        handlers = list(self._command_handlers.keys())
+        logger.info(f"Command receiver started, registered handlers: {handlers}")
 
         while not self._stop_event.is_set():
             try:
@@ -195,7 +196,10 @@ class WebSocketLogHandler(logging.Handler):
                             except Exception as e:
                                 logger.error(f"Command handler error: {e}", exc_info=True)
                         else:
-                            logger.warning(f"No handler for command: {command}, available: {list(self._command_handlers.keys())}")
+                            available = list(self._command_handlers.keys())
+                            logger.warning(
+                                f"No handler for command: {command}, available: {available}"
+                            )
                 except json.JSONDecodeError as e:
                     logger.warning(f"Failed to parse message as JSON: {e}")
 
@@ -307,7 +311,9 @@ def register_command_handler(command: str, handler: Callable):
         _ws_handler.register_command_handler(command, handler)
         logger.info(f"Registered command handler: {command}")
     else:
-        logger.error(f"Cannot register command handler '{command}' - WebSocket handler not initialized!")
+        logger.error(
+            f"Cannot register command handler '{command}' - WebSocket not initialized!"
+        )
 
 
 def get_ws_handler() -> Optional[WebSocketLogHandler]:

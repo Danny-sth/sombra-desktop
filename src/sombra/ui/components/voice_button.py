@@ -1,7 +1,7 @@
 """Fluent Design voice button with animations."""
 
-from PySide6.QtCore import Property, QPropertyAnimation, QEasingCurve, Qt, Signal
-from PySide6.QtGui import QColor, QPainter, QPen, QBrush
+from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, Qt, Signal
+from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
 
@@ -177,7 +177,8 @@ class FluentVoiceButton(QWidget):
             painter.drawRoundedRect(mic_x, mic_y, mic_width, mic_height, 7, 7)
 
             # Mic stand arc
-            painter.setPen(QPen(QColor(255, 255, 255), 3, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+            pen = QPen(QColor(255, 255, 255), 3, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+            painter.setPen(pen)
             painter.setBrush(Qt.BrushStyle.NoBrush)
             arc_y = center.y() + 6
             painter.drawArc(center.x() - 12, arc_y - 8, 24, 16, 0, -180 * 16)

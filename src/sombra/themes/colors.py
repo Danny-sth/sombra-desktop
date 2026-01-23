@@ -79,9 +79,9 @@ SHADOWS = {
     "xl": "0 12px 24px rgba(0, 0, 0, 0.35)",
 
     # Glow effects with Sombra pink
-    "glow_sm": f"0 0 8px rgba(233, 69, 96, 0.30)",
-    "glow_md": f"0 0 16px rgba(233, 69, 96, 0.40)",
-    "glow_lg": f"0 0 24px rgba(233, 69, 96, 0.50)",
+    "glow_sm": "0 0 8px rgba(233, 69, 96, 0.30)",
+    "glow_md": "0 0 16px rgba(233, 69, 96, 0.40)",
+    "glow_lg": "0 0 24px rgba(233, 69, 96, 0.50)",
 
     # Combined shadow + glow for accent elements
     "card": "0 4px 12px rgba(0, 0, 0, 0.25), 0 0 1px rgba(233, 69, 96, 0.10)",

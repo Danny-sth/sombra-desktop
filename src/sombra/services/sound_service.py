@@ -2,9 +2,10 @@
 
 import io
 import logging
-import numpy as np
 import threading
 from typing import Optional
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,10 @@ class SoundService:
                 if audio.channels == 2:
                     samples = samples.reshape((-1, 2))
 
-                logger.info(f"Playing audio: {len(samples)} samples, {audio.frame_rate}Hz, {audio.channels}ch")
+                logger.info(
+                    f"Playing audio: {len(samples)} samples, "
+                    f"{audio.frame_rate}Hz, {audio.channels}ch"
+                )
 
                 # Play with interruption support
                 sd.play(samples, audio.frame_rate)

@@ -1,17 +1,16 @@
 """Tasks page - Placeholder for future orchestrator task management."""
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 from qfluentwidgets import (
-    ScrollArea,
-    TitleLabel,
-    SubtitleLabel,
     BodyLabel,
-    IconWidget,
-    FluentIcon,
-    SimpleCardWidget,
     CaptionLabel,
+    FluentIcon,
+    IconWidget,
+    ScrollArea,
+    SimpleCardWidget,
+    SubtitleLabel,
+    TitleLabel,
 )
 
 

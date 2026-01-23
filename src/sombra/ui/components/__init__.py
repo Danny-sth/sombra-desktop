@@ -1,11 +1,11 @@
 """Sombra Desktop UI components."""
 
-from .voice_button import FluentVoiceButton
+from .agent_status_card import AgentStatus, AgentStatusCard, StatusBadge
 from .chat_bubble import ChatBubble, ThinkingBubble
-from .status_card import ConnectionStatusCard, StatusCard
 from .chat_sidebar import ChatSidebar, ConversationItem
 from .log_panel import LogPanel
-from .agent_status_card import AgentStatusCard, AgentStatus, StatusBadge
+from .status_card import ConnectionStatusCard, StatusCard
+from .voice_button import FluentVoiceButton
 
 __all__ = [
     "FluentVoiceButton",

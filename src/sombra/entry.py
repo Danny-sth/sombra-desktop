@@ -1,7 +1,7 @@
 """Entry point for PyInstaller builds."""
 
-import sys
 import os
+import sys
 
 # Add src to path for frozen builds
 if getattr(sys, 'frozen', False):

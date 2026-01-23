@@ -3,39 +3,36 @@
 import logging
 import time
 
-from PySide6.QtCore import Qt, Slot, QTimer
+from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
     QHBoxLayout,
+    QVBoxLayout,
+    QWidget,
 )
-
 from qfluentwidgets import (
+    CaptionLabel,
+    FluentIcon,
+    LineEdit,
+    PrimaryPushButton,
     ScrollArea,
     TitleLabel,
-    CaptionLabel,
-    PrimaryPushButton,
-    LineEdit,
     TransparentToolButton,
-    FluentIcon,
 )
 
-from ..components.voice_button import FluentVoiceButton
-from ..components.chat_bubble import ChatBubble, StreamingBubble
-from ..components.status_card import ConnectionStatusCard
-from ..components.chat_sidebar import ChatSidebar
-from ..styles.theme import SciFiTheme
-
-from ...data.models import Conversation
 from ...data.chat_repository import ChatRepository
-
+from ...data.models import Conversation
 from ...services.audio_service import AudioService
-from ...services.whisper_service import WhisperService
-from ...services.sombra_service import SombraService
 from ...services.hotkey_service import HotkeyService
+from ...services.sombra_service import SombraService
 from ...services.sound_service import SoundService
-from ...services.wakeword_service import WakeWordService
 from ...services.tts_service import TtsService
+from ...services.wakeword_service import WakeWordService
+from ...services.whisper_service import WhisperService
+from ..components.chat_bubble import ChatBubble, StreamingBubble
+from ..components.chat_sidebar import ChatSidebar
+from ..components.status_card import ConnectionStatusCard
+from ..components.voice_button import FluentVoiceButton
+from ..styles.theme import SciFiTheme
 
 logger = logging.getLogger(__name__)
 

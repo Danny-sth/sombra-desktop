@@ -5,17 +5,17 @@ glassmorphism effects, and consistent design system.
 """
 
 from sombra.themes.colors import (
+    BLUR,
+    BORDER_RADIUS,
+    DARK_PALETTE,
+    SHADOWS,
+    SOMBRA_CYAN,
     SOMBRA_PRIMARY,
-    SOMBRA_PRIMARY_LIGHT,
     SOMBRA_PRIMARY_DARK,
+    SOMBRA_PRIMARY_LIGHT,
     SOMBRA_PRIMARY_MUTED,
     SOMBRA_PURPLE,
-    SOMBRA_CYAN,
     TRANSPARENCY,
-    BORDER_RADIUS,
-    SHADOWS,
-    BLUR,
-    DARK_PALETTE,
 )
 
 

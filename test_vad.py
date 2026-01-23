@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test Silero VAD with proper state reset."""
 import sys
+
 sys.stdout.reconfigure(line_buffering=True)
 
 import numpy as np

@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from PySide6.QtCore import Property, QPropertyAnimation, QEasingCurve, Qt, Signal, Slot
+from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, Qt, Signal, Slot
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from ...themes.colors import DARK_PALETTE, LIGHT_PALETTE

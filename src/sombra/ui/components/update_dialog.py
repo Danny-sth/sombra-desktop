@@ -2,10 +2,10 @@
 
 from PySide6.QtCore import Signal
 from qfluentwidgets import (
-    MessageBoxBase,
-    SubtitleLabel,
     BodyLabel,
+    MessageBoxBase,
     ProgressBar,
+    SubtitleLabel,
     TextEdit,
 )
 

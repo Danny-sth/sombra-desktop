@@ -13,8 +13,8 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QVBoxLayout
 
-from sombra.ui.pages.agents_page import AgentsPage, MOCK_AGENTS
 from sombra.ui.components.agent_status_card import AgentStatus, AgentStatusCard
+from sombra.ui.pages.agents_page import MOCK_AGENTS, AgentsPage
 from sombra.ui.styles.theme import SciFiTheme
 
 
@@ -97,7 +97,6 @@ class TestAgentsPageHeader:
 
     def test_header_title_text(self, page):
         """Test title text is correct."""
-        from qfluentwidgets import TitleLabel
 
         layout = page.container.layout()
         title_widget = layout.itemAt(0).widget()
@@ -391,8 +390,8 @@ class TestAgentsPageClickHandling:
         that the handler is called, rather than checking receiver count
         (which is not available in PySide6 SignalInstance).
         """
-        from PySide6.QtGui import QMouseEvent
         from PySide6.QtCore import QEvent, QPointF
+        from PySide6.QtGui import QMouseEvent
 
         # Track handler calls
         called_ids = []
@@ -429,8 +428,8 @@ class TestAgentsPageClickHandling:
 
     def test_on_agent_clicked_called(self, page, qtbot):
         """Test _on_agent_clicked slot is called when card emits signal."""
-        from PySide6.QtGui import QMouseEvent
         from PySide6.QtCore import QEvent, QPointF
+        from PySide6.QtGui import QMouseEvent
 
         # Track if slot was called
         clicked_agents = []

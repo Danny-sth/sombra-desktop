@@ -22,8 +22,8 @@ except OSError as e:
 
 # Import Silero VAD
 try:
-    from silero_vad import load_silero_vad
     import torch
+    from silero_vad import load_silero_vad
     SILERO_VAD_AVAILABLE = True
 except ImportError:
     load_silero_vad = None
@@ -185,7 +185,11 @@ class AudioService(QObject):
 
             # Log every ~1 sec
             if self._total_frames % 31 == 0:
-                logger.info(f"VAD: prob={prob:.2f} speech={self._speech_detected} silence={self._silence_frames}/{self.SILENCE_FRAMES_THRESHOLD} frames={self._total_frames}")
+                sil = f"{self._silence_frames}/{self.SILENCE_FRAMES_THRESHOLD}"
+                logger.info(
+                    f"VAD: prob={prob:.2f} speech={self._speech_detected} "
+                    f"silence={sil} frames={self._total_frames}"
+                )
 
             # Auto-stop conditions
             should_stop = False
@@ -224,7 +228,11 @@ class AudioService(QObject):
     def get_audio_devices():
         if not SOUNDDEVICE_AVAILABLE:
             return []
-        return [{"id": i, "name": d["name"]} for i, d in enumerate(sd.query_devices()) if d["max_input_channels"] > 0]
+        return [
+            {"id": i, "name": d["name"]}
+            for i, d in enumerate(sd.query_devices())
+            if d["max_input_channels"] > 0
+        ]
 
     def set_device(self, device_id):
         self._device_id = device_id

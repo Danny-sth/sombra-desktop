@@ -194,12 +194,18 @@ class OutputDisplay(QWidget):
                 )
                 highlighted = highlight(code, lexer, formatter)
 
-                return f'<pre style="background-color: #1e1e1e; padding: 12px; border-radius: 6px; overflow-x: auto;"><code>{highlighted}</code></pre>'
+                return (
+                    '<pre style="background-color: #1e1e1e; padding: 12px; '
+                    f'border-radius: 6px; overflow-x: auto;"><code>{highlighted}</code></pre>'
+                )
 
             except Exception:
                 # Fallback to plain code block
                 escaped = code.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                return f'<pre style="background-color: #1e1e1e; padding: 12px; border-radius: 6px;"><code>{escaped}</code></pre>'
+                return (
+                    '<pre style="background-color: #1e1e1e; padding: 12px; '
+                    f'border-radius: 6px;"><code>{escaped}</code></pre>'
+                )
 
         # Match fenced code blocks
         pattern = r"```(\w*)\n(.*?)```"
