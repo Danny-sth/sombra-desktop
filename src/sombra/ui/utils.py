@@ -1,9 +1,13 @@
 """UI utilities."""
 
+import platform
 import sys
 from pathlib import Path
+from typing import Dict
 
 from PySide6.QtGui import QIcon
+
+from sombra import __app_name__, __version__
 
 
 def get_app_icon() -> QIcon:
@@ -34,3 +38,17 @@ def get_app_icon() -> QIcon:
             icon = QIcon(str(ico_file))
 
     return icon
+
+
+def health_check() -> Dict[str, str]:
+    """Return version and system info for health checks.
+
+    Returns:
+        Dictionary containing version, app_name, python_version, and platform.
+    """
+    return {
+        "version": __version__,
+        "app_name": __app_name__,
+        "python_version": platform.python_version(),
+        "platform": platform.system(),
+    }
