@@ -130,7 +130,7 @@ class ChatSidebar(QFrame):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
 
-        self._is_expanded = False
+        self._is_expanded = True
         self._conversations: list[Conversation] = []
         self._items: dict[str, ConversationItem] = {}
         self._active_id: str | None = None
@@ -138,8 +138,8 @@ class ChatSidebar(QFrame):
         self._setup_ui()
         self._setup_animation()
 
-        # Start collapsed
-        self.setFixedWidth(self.COLLAPSED_WIDTH)
+        # Start expanded to show history
+        self.setFixedWidth(self.EXPANDED_WIDTH)
 
     def _setup_ui(self) -> None:
         """Build the sidebar UI."""
