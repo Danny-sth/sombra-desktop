@@ -300,3 +300,119 @@ class SombraService(QObject):
         bridge = get_async_bridge()
         if bridge.is_running:
             bridge.run_coroutine(self.close())
+
+    # Sessions API methods
+
+    async def get_sessions(self, limit: int = 50, offset: int = 0) -> list[dict]:
+        """Get list of chat sessions.
+
+        Args:
+            limit: Maximum number of sessions to return
+            offset: Offset for pagination
+
+        Returns:
+            List of session dictionaries
+        """
+        client = await self._ensure_client()
+        session = get_session_manager()
+
+        response = await client.get(
+            f"{self._base_url}/api/sessions",
+            params={"limit": limit, "offset": offset},
+            headers=session.get_headers(),
+        )
+        response.raise_for_status()
+
+        result = response.json()
+        return result.get("sessions", [])
+
+    async def get_session_detail(self, session_id: str) -> dict:
+        """Get detailed information about a session.
+
+        Args:
+            session_id: Session ID
+
+        Returns:
+            Session detail dictionary
+        """
+        client = await self._ensure_client()
+        session = get_session_manager()
+
+        response = await client.get(
+            f"{self._base_url}/api/sessions/{session_id}",
+            headers=session.get_headers(),
+        )
+        response.raise_for_status()
+
+        return response.json()
+
+    async def get_session_messages(
+        self, session_id: str, limit: int = 50, offset: int = 0
+    ) -> list[dict]:
+        """Get messages for a session.
+
+        Args:
+            session_id: Session ID
+            limit: Maximum number of messages
+            offset: Offset for pagination
+
+        Returns:
+            List of message dictionaries
+        """
+        client = await self._ensure_client()
+        session = get_session_manager()
+
+        response = await client.get(
+            f"{self._base_url}/api/sessions/{session_id}/messages",
+            params={"limit": limit, "offset": offset},
+            headers=session.get_headers(),
+        )
+        response.raise_for_status()
+
+        result = response.json()
+        return result.get("messages", [])
+
+    async def create_session(self, session_id: str | None = None) -> dict:
+        """Create a new chat session.
+
+        Args:
+            session_id: Optional session ID (auto-generated if not provided)
+
+        Returns:
+            Created session dictionary
+        """
+        client = await self._ensure_client()
+        session = get_session_manager()
+
+        payload = {}
+        if session_id:
+            payload["session_id"] = session_id
+
+        response = await client.post(
+            f"{self._base_url}/api/sessions",
+            json=payload,
+            headers=session.get_headers(),
+        )
+        response.raise_for_status()
+
+        return response.json()
+
+    async def delete_session(self, session_id: str) -> bool:
+        """Delete a chat session.
+
+        Args:
+            session_id: Session ID to delete
+
+        Returns:
+            True if successful
+        """
+        client = await self._ensure_client()
+        session = get_session_manager()
+
+        response = await client.delete(
+            f"{self._base_url}/api/sessions/{session_id}",
+            headers=session.get_headers(),
+        )
+        response.raise_for_status()
+
+        return True

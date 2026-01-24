@@ -23,7 +23,6 @@ from qfluentwidgets import (
 from ..components.voice_button import FluentVoiceButton
 from ..components.chat_bubble import ChatBubble, StreamingBubble
 from ..components.status_card import ConnectionStatusCard
-from ..components.chat_sidebar import ChatSidebar
 
 from ...data.models import Conversation
 from ...data.chat_repository import ChatRepository
@@ -94,9 +93,11 @@ class ChatPage(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Sidebar (collapsible)
-        self._sidebar = ChatSidebar()
-        main_layout.addWidget(self._sidebar)
+        # Sidebar (session list from API)
+        from ..components.session_list_widget import SessionListWidget
+        self._session_list = SessionListWidget()
+        self._session_list.setMaximumWidth(300)
+        main_layout.addWidget(self._session_list)
 
         # Chat area
         chat_widget = self._create_chat_area()
@@ -266,23 +267,59 @@ class ChatPage(QWidget):
             self._wakeword.wake_word_detected.connect(self._on_wake_word_detected)
             self._wakeword.error.connect(self._on_error)
 
-        # Sidebar signals
-        self._sidebar.conversation_selected.connect(self._on_conversation_selected)
-        self._sidebar.new_conversation_requested.connect(self._new_conversation)
-        self._sidebar.conversation_renamed.connect(self._on_conversation_renamed)
-        self._sidebar.conversation_deleted.connect(self._on_conversation_deleted)
-        self._sidebar.toggle_requested.connect(self._toggle_sidebar)
+        # Session list signals
+        self._session_list.session_selected.connect(self._on_session_selected)
+        self._session_list.new_session_requested.connect(self._new_conversation)
+        self._session_list.session_deleted.connect(self._on_session_deleted)
 
     # ===== History / Persistence =====
 
     def _load_conversations(self) -> None:
-        """Load conversations from database."""
-        conversations = self._repository.list_conversations()
-        self._sidebar.set_conversations(conversations)
+        """Load sessions from API."""
+        async def load_sessions() -> None:
+            try:
+                sessions = await self._sombra.get_sessions(limit=50)
+                self._session_list.set_sessions(sessions)
 
-        # Load most recent conversation if exists
-        if conversations:
-            self._load_conversation(conversations[0].id)
+                # Load most recent session if exists
+                if sessions:
+                    await self._load_session(sessions[0].get("id", ""))
+            except Exception as e:
+                print(f"Failed to load sessions: {e}")
+
+        from ...core.async_bridge import get_async_bridge
+        bridge = get_async_bridge()
+        bridge.run_coroutine(load_sessions())
+
+    async def _load_session(self, session_id: str) -> None:
+        """Load a session from API and display its messages."""
+        try:
+            # Get session messages from API
+            messages = await self._sombra.get_session_messages(session_id, limit=100)
+
+            # Update current session ID
+            from ...core.session import get_session_manager
+            session = get_session_manager()
+            session.set_session_id(session_id)
+
+            # Clear current UI
+            self._clear_chat_ui()
+
+            # Display messages
+            for msg in messages:
+                role = msg.get("role", "")
+                content = msg.get("content", "")
+
+                bubble = ChatBubble(content, is_user=(role == "user"))
+                # Connect play/stop buttons for Sombra messages
+                if role == "assistant":
+                    bubble.play_requested.connect(self._on_replay_requested)
+                    bubble.play_audio.connect(self._on_play_cached_audio)
+                    bubble.stop_requested.connect(self._on_stop_requested)
+                self._add_message_widget(bubble)
+
+        except Exception as e:
+            print(f"Failed to load session {session_id}: {e}")
 
     def _load_conversation(self, conversation_id: str) -> None:
         """Load a conversation and display its messages."""
@@ -291,7 +328,6 @@ class ChatPage(QWidget):
             return
 
         self._current_conversation = conv
-        self._sidebar.set_active_conversation(conversation_id)
 
         # Clear current UI
         self._clear_chat_ui()
@@ -331,21 +367,37 @@ class ChatPage(QWidget):
     @Slot()
     def _new_conversation(self) -> None:
         """Start a new conversation."""
-        from ...core.session import get_session_manager
+        async def create_new() -> None:
+            try:
+                from ...core.session import get_session_manager
+                session = get_session_manager()
+                session.regenerate()
 
-        session = get_session_manager()
-        session.regenerate()
+                # Create new session via API
+                await self._sombra.create_session(session.session_id)
 
-        self._current_conversation = self._repository.create_conversation(
-            session_id=session.session_id
-        )
+                # Clear UI and reload sessions
+                self._clear_chat_ui()
+                self._load_conversations()
 
-        self._clear_chat_ui()
-        self._load_conversations()
-        self._sidebar.set_active_conversation(self._current_conversation.id)
+                self._status_label.setText("New chat started")
+                self._status_label.setStyleSheet("color: #888888;")
+            except Exception as e:
+                print(f"Failed to create new session: {e}")
 
-        self._status_label.setText("New chat started")
-        self._status_label.setStyleSheet("color: #888888;")
+        from ...core.async_bridge import get_async_bridge
+        bridge = get_async_bridge()
+        bridge.run_coroutine(create_new())
+
+    @Slot(str)
+    def _on_session_selected(self, session_id: str) -> None:
+        """Handle session selection from sidebar."""
+        async def load() -> None:
+            await self._load_session(session_id)
+
+        from ...core.async_bridge import get_async_bridge
+        bridge = get_async_bridge()
+        bridge.run_coroutine(load())
 
     @Slot(str)
     def _on_conversation_selected(self, conversation_id: str) -> None:
@@ -368,6 +420,28 @@ class ChatPage(QWidget):
         self._load_conversations()
 
     @Slot(str)
+    def _on_session_deleted(self, session_id: str) -> None:
+        """Handle session deletion."""
+        async def delete() -> None:
+            try:
+                await self._sombra.delete_session(session_id)
+                self._session_list.remove_session(session_id)
+
+                # Clear chat if deleted session was active
+                from ...core.session import get_session_manager
+                session = get_session_manager()
+                if session.session_id == session_id:
+                    self._clear_chat_ui()
+                    # Create new session
+                    session.regenerate()
+            except Exception as e:
+                print(f"Failed to delete session {session_id}: {e}")
+
+        from ...core.async_bridge import get_async_bridge
+        bridge = get_async_bridge()
+        bridge.run_coroutine(delete())
+
+    @Slot(str)
     def _on_conversation_deleted(self, conversation_id: str) -> None:
         """Handle conversation deletion."""
         self._repository.delete_conversation(conversation_id)
@@ -382,7 +456,7 @@ class ChatPage(QWidget):
     @Slot()
     def _toggle_sidebar(self) -> None:
         """Toggle sidebar visibility."""
-        self._sidebar.toggle()
+        self._session_list.setVisible(not self._session_list.isVisible())
 
     @Slot()
     def _clear_current_chat(self) -> None:
@@ -477,23 +551,6 @@ class ChatPage(QWidget):
 
     def _send_query(self, text: str) -> None:
         """Send query to Sombra."""
-        # Ensure conversation exists
-        conv = self._ensure_conversation()
-
-        # Save user message to DB
-        self._repository.add_message(conv.id, "user", text)
-        self._pending_user_message = text
-
-        # Check if this is first message (for auto-title)
-        messages = self._repository.get_messages(conv.id)
-        is_first_message = len(messages) == 1
-
-        # Auto-title on first message
-        if is_first_message and not conv.title:
-            title = self._generate_title(text)
-            self._repository.update_conversation_title(conv.id, title)
-            self._load_conversations()
-
         # Add user bubble to UI
         user_bubble = ChatBubble(text, is_user=True)
         self._add_message_widget(user_bubble)
@@ -505,7 +562,7 @@ class ChatPage(QWidget):
         self._streaming_bubble.start_streaming()
         self._streaming_bubble.show()
 
-        # Send to Sombra
+        # Send to Sombra (backend saves messages)
         self._sombra.send_chat_async(text)
 
     @Slot(str)
@@ -532,10 +589,7 @@ class ChatPage(QWidget):
         # Get response content
         content = self._streaming_bubble.get_content()
 
-        if content and self._current_conversation:
-            # Save assistant message to DB
-            self._repository.add_message(self._current_conversation.id, "assistant", content)
-
+        if content:
             # Convert streaming bubble to permanent bubble
             sombra_bubble = ChatBubble(content, is_user=False)
             sombra_bubble.play_requested.connect(self._on_replay_requested)
