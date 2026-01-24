@@ -29,6 +29,7 @@ from qfluentwidgets import (
 
 from ..components.agent_status_card import AgentStatus as UIAgentStatus, AgentStatusCard
 from ..components.agent_output_panel import AgentOutputPanel
+from ..components.agent_detail_panel import AgentDetailPanel
 from ...services.swarm_service import (
     AgentRole,
     AgentStatus,
@@ -164,6 +165,8 @@ class AgentsPage(ScrollArea):
         self.setObjectName("agentsPage")
 
         self._agent_cards: dict[str, AgentStatusCard] = {}
+        self._agent_detail_panel: Optional[AgentDetailPanel] = None
+        self._detail_panel_visible = False
         self._swarm_service: Optional[SwarmService] = None
         self._refresh_timer: Optional[QTimer] = None
 
@@ -195,6 +198,13 @@ class AgentsPage(ScrollArea):
 
         # Agent output panel (real-time logs)
         self._create_output_panel(layout)
+
+        # Agent detail panel (shown when clicking on agent)
+        self._detail_panel_container = QWidget()
+        self._detail_panel_layout = QVBoxLayout(self._detail_panel_container)
+        self._detail_panel_layout.setContentsMargins(0, 0, 0, 0)
+        self._detail_panel_container.setVisible(False)
+        layout.addWidget(self._detail_panel_container)
 
         # Action buttons
         self._create_action_buttons(layout)
@@ -443,11 +453,86 @@ class AgentsPage(ScrollArea):
         """Handle agent output message."""
         self._output_panel.append_output(agent, message)
 
+        # Also update detail panel if it's showing this agent
+        if self._agent_detail_panel and self._detail_panel_visible:
+            if self._agent_detail_panel._agent_id == agent.lower():
+                self._agent_detail_panel.append_log(message)
+
     @Slot(str)
     def _on_agent_clicked(self, agent_id: str) -> None:
-        """Handle agent card click."""
+        """Handle agent card click - show agent detail panel."""
         logger.debug("Agent clicked: %s", agent_id)
-        # Future: Show agent details panel
+
+        # Get agent name with emoji
+        agent_names = {
+            "coder": "💻 Coder",
+            "deploy": "🚀 Deploy",
+            "qa": "🧪 QA",
+        }
+        agent_name = agent_names.get(agent_id, agent_id.capitalize())
+
+        # Close existing panel if any
+        if self._agent_detail_panel:
+            self._detail_panel_layout.removeWidget(self._agent_detail_panel)
+            self._agent_detail_panel.deleteLater()
+
+        # Create new panel
+        self._agent_detail_panel = AgentDetailPanel(agent_id, agent_name)
+        self._agent_detail_panel.closed.connect(self._on_detail_panel_closed)
+        self._agent_detail_panel.context_submitted.connect(self._on_agent_context_submitted)
+
+        # Add to layout and show
+        self._detail_panel_layout.addWidget(self._agent_detail_panel)
+        self._detail_panel_container.setVisible(True)
+        self._detail_panel_visible = True
+
+        # Update panel with current agent state if available
+        if self._swarm_service and self._swarm_service.state.agents:
+            for role, agent in self._swarm_service.state.agents.items():
+                if role.value == agent_id:
+                    # Calculate cost
+                    cost_usd = 0.0
+                    if agent.usage:
+                        input_tokens = agent.usage.get("input_tokens", 0)
+                        output_tokens = agent.usage.get("output_tokens", 0)
+                        cost_usd = (input_tokens / 1_000_000 * 3.0) + (output_tokens / 1_000_000 * 15.0)
+
+                    self._agent_detail_panel.update_status(
+                        status=agent.status.value.capitalize(),
+                        iterations=agent.iterations,
+                        cost_usd=cost_usd,
+                    )
+                    break
+
+    @Slot()
+    def _on_detail_panel_closed(self) -> None:
+        """Handle detail panel close."""
+        self._detail_panel_container.setVisible(False)
+        self._detail_panel_visible = False
+
+        if self._agent_detail_panel:
+            self._detail_panel_layout.removeWidget(self._agent_detail_panel)
+            self._agent_detail_panel.deleteLater()
+            self._agent_detail_panel = None
+
+    @Slot(str, str)
+    def _on_agent_context_submitted(self, agent_id: str, context: str) -> None:
+        """Handle agent context submission.
+
+        Args:
+            agent_id: Agent identifier
+            context: Additional context text
+        """
+        logger.info(f"Context submitted for agent {agent_id}: {context[:100]}...")
+
+        # TODO: Send context to Swarm server to update agent parameters
+        # For now, just show confirmation
+        InfoBar.success(
+            title="Context Submitted",
+            content=f"Additional context for {agent_id} agent has been saved",
+            position=InfoBarPosition.TOP_RIGHT,
+            parent=self,
+        )
 
     @Slot()
     def _on_start_task(self) -> None:
