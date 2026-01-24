@@ -1,6 +1,6 @@
 [project]
 name = "sombra-desktop"
-version = "0.4.2"
+version = "0.4.3"
 description = "Voice-enabled AI assistant desktop application for Sombra"
 readme = "README.md"
 requires-python = ">=3.10"
