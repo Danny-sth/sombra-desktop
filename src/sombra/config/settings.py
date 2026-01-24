@@ -41,7 +41,7 @@ class Settings:
         self.sombra_session_id: str = os.getenv("SOMBRA_SESSION_ID", "owner")
 
         # Swarm Server (runs on PC with Claude Code CLI)
-        self.swarm_api_url: str = os.getenv("SWARM_API_URL", "http://localhost:8081")
+        self.swarm_api_url: str = os.getenv("SWARM_API_URL", "http://localhost:8082")
 
         # STT Service (ElevenLabs primary, local Whisper fallback)
         self.elevenlabs_api_key: Optional[str] = os.getenv("ELEVENLABS_API_KEY")
