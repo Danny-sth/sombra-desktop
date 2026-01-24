@@ -211,6 +211,7 @@ class SwarmService(QObject):
         self._client: Optional[httpx.AsyncClient] = None
         self._cancel_requested = False
         self._state = SwarmState()
+        self._connection_warned = False  # Track if we already warned about connection
 
     @property
     def state(self) -> SwarmState:
@@ -343,9 +344,12 @@ class SwarmService(QObject):
             response.raise_for_status()
             data = response.json()
             self._state = SwarmState.from_dict(data)
+            self._connection_warned = False  # Reset warning on success
             return self._state
         except httpx.HTTPError as e:
-            logger.warning(f"Failed to get swarm status: {e}")
+            if not self._connection_warned:
+                logger.warning(f"Swarm server not available at {self._base_url}")
+                self._connection_warned = True
             return self._state
 
     async def check_connection(self) -> bool:
@@ -397,8 +401,10 @@ class SwarmService(QObject):
                             pass
 
         except httpx.HTTPError as e:
-            self.connection_status.emit(f"Disconnected: {e}")
-            logger.warning(f"Status stream error: {e}")
+            if not self._connection_warned:
+                logger.warning(f"Swarm status stream not available")
+                self._connection_warned = True
+            self.connection_status.emit("Swarm not available")
 
     async def listen_output_stream(self) -> None:
         """Listen to SSE agent output stream."""
@@ -425,7 +431,8 @@ class SwarmService(QObject):
                             pass
 
         except httpx.HTTPError as e:
-            logger.warning(f"Output stream error: {e}")
+            # Already warned in status stream, no need to spam logs
+            pass
 
     # ===== Async Wrappers =====
 

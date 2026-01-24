@@ -182,6 +182,7 @@ class DevicesPage(ScrollArea):
         self._selected_client: Optional[str] = None
         self._autoscroll = True
         self._all_logs: list[dict] = []  # All received logs
+        self._connection_warned = False  # Track if we already warned
 
         self._setup_ui()
         self._setup_refresh_timer()
@@ -350,9 +351,12 @@ class DevicesPage(ScrollArea):
 
             clients = data.get("clients", [])
             self._update_device_list(clients)
+            self._connection_warned = False  # Reset on success
 
         except Exception as e:
-            logger.warning(f"Failed to refresh devices: {e}")
+            if not self._connection_warned:
+                logger.warning(f"Devices API not available")
+                self._connection_warned = True
 
     def _update_device_list(self, clients: list[str]):
         """Update device cards based on client list."""
