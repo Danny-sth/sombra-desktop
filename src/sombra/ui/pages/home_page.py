@@ -49,6 +49,9 @@ class HomePage(ScrollArea):
         # Quick actions
         self._create_quick_actions(layout)
 
+        # Server control
+        self._create_server_control(layout)
+
         # Info section
         self._create_info_section(layout)
 
@@ -166,6 +169,43 @@ class HomePage(ScrollArea):
         actions_layout.addStretch()
         parent_layout.addLayout(actions_layout)
 
+    def _create_server_control(self, parent_layout: QVBoxLayout) -> None:
+        """Create server control section with start/stop/restart buttons."""
+        section_title = SubtitleLabel("Sombra Server Control")
+        parent_layout.addWidget(section_title)
+
+        control_layout = QHBoxLayout()
+        control_layout.setSpacing(12)
+
+        # Start button (primary - highest priority)
+        self._start_btn = PrimaryPushButton("Start Server")
+        self._start_btn.setIcon(FluentIcon.PLAY)
+        self._start_btn.clicked.connect(self._on_start_server)
+        control_layout.addWidget(self._start_btn)
+
+        # Restart button (secondary)
+        self._restart_btn = TransparentPushButton("Restart Server")
+        self._restart_btn.setIcon(FluentIcon.SYNC)
+        self._restart_btn.clicked.connect(self._on_restart_server)
+        control_layout.addWidget(self._restart_btn)
+
+        # Stop button (danger)
+        self._stop_btn = TransparentPushButton("Stop Server")
+        self._stop_btn.setIcon(FluentIcon.POWER_BUTTON)
+        self._stop_btn.clicked.connect(self._on_stop_server)
+        control_layout.addWidget(self._stop_btn)
+
+        # Status label
+        self._server_status_label = BodyLabel("Server status: checking...")
+        self._server_status_label.setStyleSheet("color: #888888;")
+        control_layout.addWidget(self._server_status_label)
+
+        control_layout.addStretch()
+        parent_layout.addLayout(control_layout)
+
+        # Check server status on startup
+        self._check_server_status()
+
     def _create_info_section(self, parent_layout: QVBoxLayout) -> None:
         """Create information section."""
         section_title = SubtitleLabel("About Sombra Desktop")
@@ -223,6 +263,87 @@ class HomePage(ScrollArea):
         status_label = self._session_card.findChild(CaptionLabel, "session_status")
         if status_label:
             status_label.setText("New session started")
+
+    @Slot()
+    def _on_start_server(self) -> None:
+        """Start Sombra server on VPS."""
+        import subprocess
+        self._server_status_label.setText("Server status: starting...")
+        self._server_status_label.setStyleSheet("color: #f9a825;")
+
+        try:
+            # SSH command to start sombra service
+            cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "root@90.156.230.49",
+                   "systemctl start sombra"]
+            subprocess.run(cmd, check=True, timeout=10)
+
+            # Wait a moment and check status
+            import time
+            time.sleep(2)
+            self._check_server_status()
+        except Exception as e:
+            self._server_status_label.setText(f"Server status: failed to start ({e})")
+            self._server_status_label.setStyleSheet("color: #e94560;")
+
+    @Slot()
+    def _on_restart_server(self) -> None:
+        """Restart Sombra server on VPS."""
+        import subprocess
+        self._server_status_label.setText("Server status: restarting...")
+        self._server_status_label.setStyleSheet("color: #f9a825;")
+
+        try:
+            # SSH command to restart sombra service
+            cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "root@90.156.230.49",
+                   "systemctl restart sombra"]
+            subprocess.run(cmd, check=True, timeout=10)
+
+            # Wait a moment and check status
+            import time
+            time.sleep(3)
+            self._check_server_status()
+        except Exception as e:
+            self._server_status_label.setText(f"Server status: failed to restart ({e})")
+            self._server_status_label.setStyleSheet("color: #e94560;")
+
+    @Slot()
+    def _on_stop_server(self) -> None:
+        """Stop Sombra server on VPS."""
+        import subprocess
+        self._server_status_label.setText("Server status: stopping...")
+        self._server_status_label.setStyleSheet("color: #f9a825;")
+
+        try:
+            # SSH command to stop sombra service
+            cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "root@90.156.230.49",
+                   "systemctl stop sombra"]
+            subprocess.run(cmd, check=True, timeout=10)
+
+            self._server_status_label.setText("Server status: stopped")
+            self._server_status_label.setStyleSheet("color: #888888;")
+        except Exception as e:
+            self._server_status_label.setText(f"Server status: failed to stop ({e})")
+            self._server_status_label.setStyleSheet("color: #e94560;")
+
+    def _check_server_status(self) -> None:
+        """Check if Sombra server is running."""
+        import subprocess
+
+        try:
+            # SSH command to check sombra service status
+            cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "root@90.156.230.49",
+                   "systemctl is-active sombra"]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+
+            if result.stdout.strip() == "active":
+                self._server_status_label.setText("Server status: running ✓")
+                self._server_status_label.setStyleSheet("color: #4ecca3;")
+            else:
+                self._server_status_label.setText("Server status: stopped")
+                self._server_status_label.setStyleSheet("color: #888888;")
+        except Exception as e:
+            self._server_status_label.setText(f"Server status: unknown")
+            self._server_status_label.setStyleSheet("color: #888888;")
 
     # ===== Public Methods =====
 
