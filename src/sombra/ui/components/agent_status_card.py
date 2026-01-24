@@ -98,10 +98,9 @@ class AgentStatusCard(SimpleCardWidget):
 
     # Default icons for known agent types
     AGENT_ICONS = {
-        "builder": FluentIcon.DEVELOPER_TOOLS,
-        "reviewer": FluentIcon.VIEW,
-        "tester": FluentIcon.CHECKBOX,
-        "refactor": FluentIcon.SYNC,
+        "coder": FluentIcon.CODE,
+        "deploy": FluentIcon.UP,
+        "qa": FluentIcon.CHECKBOX,
     }
 
     def __init__(
@@ -127,7 +126,7 @@ class AgentStatusCard(SimpleCardWidget):
 
     def _setup_ui(self) -> None:
         """Build the card UI."""
-        self.setFixedHeight(120)
+        self.setFixedHeight(150)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         main_layout = QVBoxLayout(self)
@@ -160,6 +159,21 @@ class AgentStatusCard(SimpleCardWidget):
         self._desc_label.setWordWrap(True)
         main_layout.addWidget(self._desc_label)
 
+        # Stats row: Iterations & Cost
+        stats_row = QHBoxLayout()
+        stats_row.setSpacing(16)
+
+        self._iterations_label = CaptionLabel("Iterations: -")
+        self._iterations_label.setStyleSheet("color: #888888; font-size: 11px;")
+        stats_row.addWidget(self._iterations_label)
+
+        self._cost_label = CaptionLabel("Cost: $0.00")
+        self._cost_label.setStyleSheet("color: #888888; font-size: 11px;")
+        stats_row.addWidget(self._cost_label)
+
+        stats_row.addStretch()
+
+        main_layout.addLayout(stats_row)
         main_layout.addStretch()
 
     def _apply_theme(self) -> None:
@@ -209,3 +223,21 @@ class AgentStatusCard(SimpleCardWidget):
         """Update agent icon."""
         self._icon = icon
         self._icon_widget.setIcon(icon)
+
+    def set_iterations(self, iterations: int) -> None:
+        """Update agent iterations count."""
+        self._iterations_label.setText(f"Iterations: {iterations}")
+
+    def set_cost(self, cost_usd: float) -> None:
+        """Update agent cost."""
+        self._cost_label.setText(f"Cost: ${cost_usd:.2f}")
+
+    def update_stats(self, iterations: int = 0, cost_usd: float = 0.0) -> None:
+        """Update agent statistics.
+
+        Args:
+            iterations: Number of iterations completed
+            cost_usd: Total cost in USD
+        """
+        self.set_iterations(iterations)
+        self.set_cost(cost_usd)

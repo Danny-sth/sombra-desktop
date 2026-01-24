@@ -30,11 +30,28 @@ class SwarmMode(Enum):
 
 
 class AgentRole(Enum):
-    """Agent roles in the swarm."""
-    BUILDER = "builder"
-    REVIEWER = "reviewer"
-    TESTER = "tester"
-    REFACTOR = "refactor"
+    """Agent roles in the swarm - 3 core agents."""
+    CODER = "coder"     # Writes code, tests, commits (no push)
+    DEPLOY = "deploy"   # CI/CD: review, push, monitor CI, deploy
+    QA = "qa"           # Quality Assurance: write autotests, run against deployed app
+
+    @property
+    def emoji(self) -> str:
+        """Get emoji for agent role."""
+        return {
+            AgentRole.CODER: "💻",
+            AgentRole.DEPLOY: "🚀",
+            AgentRole.QA: "🧪",
+        }.get(self, "🤖")
+
+    @property
+    def display_name(self) -> str:
+        """Get display name for agent role."""
+        return {
+            AgentRole.CODER: "Coder",
+            AgentRole.DEPLOY: "Deploy",
+            AgentRole.QA: "QA",
+        }.get(self, self.value.capitalize())
 
 
 class AgentStatus(Enum):

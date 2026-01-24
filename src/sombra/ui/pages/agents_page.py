@@ -28,6 +28,7 @@ from qfluentwidgets import (
 )
 
 from ..components.agent_status_card import AgentStatus as UIAgentStatus, AgentStatusCard
+from ..components.agent_output_panel import AgentOutputPanel
 from ...services.swarm_service import (
     AgentRole,
     AgentStatus,
@@ -192,6 +193,9 @@ class AgentsPage(ScrollArea):
         # Agent cards grid
         self._create_agents_grid(layout)
 
+        # Agent output panel (real-time logs)
+        self._create_output_panel(layout)
+
         # Action buttons
         self._create_action_buttons(layout)
 
@@ -243,36 +247,42 @@ class AgentsPage(ScrollArea):
         parent_layout.addWidget(self._task_card)
 
     def _create_agents_grid(self, parent_layout: QVBoxLayout) -> None:
-        """Create 2x2 grid of agent status cards."""
+        """Create grid of agent status cards (3 core agents)."""
         section_title = SubtitleLabel("Agents")
         parent_layout.addWidget(section_title)
 
         grid = QGridLayout()
         grid.setSpacing(16)
 
-        # Create cards for all agent roles
+        # Create cards for 3 core agent roles
         agents_info = [
-            ("builder", "Builder", "Implements features and writes code"),
-            ("reviewer", "Reviewer", "Reviews code for quality and best practices"),
-            ("tester", "Tester", "Creates and runs tests"),
-            ("refactor", "Refactor", "Optimizes and restructures code"),
+            ("coder", "💻 Coder", "Writes code, tests, commits (no push)"),
+            ("deploy", "🚀 Deploy", "CI/CD: review, push, monitor CI, deploy"),
+            ("qa", "🧪 QA", "Quality Assurance: write autotests, run against deployed app"),
         ]
 
         for idx, (agent_id, name, desc) in enumerate(agents_info):
             card = AgentStatusCard(
                 agent_id=agent_id,
-                name=f"{name} Agent",
+                name=name,
                 description=desc,
                 status=UIAgentStatus.OFFLINE,
             )
             card.clicked.connect(self._on_agent_clicked)
             self._agent_cards[agent_id] = card
 
-            row = idx // 2
-            col = idx % 2
-            grid.addWidget(card, row, col)
+            # 3 cards in a row
+            grid.addWidget(card, 0, idx)
 
         parent_layout.addLayout(grid)
+
+    def _create_output_panel(self, parent_layout: QVBoxLayout) -> None:
+        """Create agent output panel for real-time logs."""
+        section_title = SubtitleLabel("Real-time Output")
+        parent_layout.addWidget(section_title)
+
+        self._output_panel = AgentOutputPanel()
+        parent_layout.addWidget(self._output_panel)
 
     def _create_action_buttons(self, parent_layout: QVBoxLayout) -> None:
         """Create action buttons for task management."""
@@ -313,12 +323,13 @@ class AgentsPage(ScrollArea):
         self._swarm_service.connection_status.connect(self._on_connection_status)
         self._swarm_service.error_occurred.connect(self._on_error)
         self._swarm_service.question_received.connect(self._on_question)
+        self._swarm_service.agent_output.connect(self._on_agent_output)
 
         # Enter key starts task
         self._task_input.returnPressed.connect(self._on_start_task)
 
     def showEvent(self, event) -> None:
-        """Handle page show - start SSE stream and refresh timer."""
+        """Handle page show - start SSE streams and refresh timer."""
         super().showEvent(event)
 
         if self._swarm_service:
@@ -326,8 +337,9 @@ class AgentsPage(ScrollArea):
             self._swarm_service.check_connection_async()
             self._swarm_service.get_status_async()
 
-            # Start SSE stream
+            # Start SSE streams
             self._swarm_service.start_status_stream()
+            self._swarm_service.start_output_stream()
 
         # Refresh every 5 seconds as backup
         if self._refresh_timer is None:
@@ -364,6 +376,29 @@ class AgentsPage(ScrollArea):
                         self._agent_cards[card_id].set_description(
                             f"Working: {subtask_desc[:50]}..."
                         )
+                elif agent.status == AgentStatus.IDLE:
+                    # Reset to default description when idle
+                    default_descs = {
+                        "coder": "Writes code, tests, commits (no push)",
+                        "deploy": "CI/CD: review, push, monitor CI, deploy",
+                        "qa": "Quality Assurance: write autotests, run against deployed app",
+                    }
+                    self._agent_cards[card_id].set_description(
+                        default_descs.get(card_id, "")
+                    )
+
+                # Update agent statistics
+                cost_usd = 0.0
+                if agent.usage:
+                    # Calculate cost from usage (rough estimate: $3/M input, $15/M output for Sonnet)
+                    input_tokens = agent.usage.get("input_tokens", 0)
+                    output_tokens = agent.usage.get("output_tokens", 0)
+                    cost_usd = (input_tokens / 1_000_000 * 3.0) + (output_tokens / 1_000_000 * 15.0)
+
+                self._agent_cards[card_id].update_stats(
+                    iterations=agent.iterations,
+                    cost_usd=cost_usd,
+                )
 
         # Update task card
         self._task_card.update_task(state.current_task, state)
@@ -403,6 +438,11 @@ class AgentsPage(ScrollArea):
             parent=self,
         )
 
+    @Slot(str, str)
+    def _on_agent_output(self, agent: str, message: str) -> None:
+        """Handle agent output message."""
+        self._output_panel.append_output(agent, message)
+
     @Slot(str)
     def _on_agent_clicked(self, agent_id: str) -> None:
         """Handle agent card click."""
@@ -423,6 +463,9 @@ class AgentsPage(ScrollArea):
             return
 
         if self._swarm_service:
+            # Clear previous output
+            self._output_panel.clear()
+
             self._swarm_service.start_task_async(
                 description=description,
                 mode=SwarmMode.DEVELOPMENT,
