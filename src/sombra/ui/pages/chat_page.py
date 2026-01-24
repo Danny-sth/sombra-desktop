@@ -3,7 +3,7 @@
 import logging
 import time
 
-from PySide6.QtCore import Qt, Slot, QTimer
+from PySide6.QtCore import Qt, Slot, QTimer, Signal
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -49,6 +49,10 @@ class ChatPage(QWidget):
     - Connection status indicator
     - SQLite persistence
     """
+
+    # Signals for thread-safe UI updates from async code
+    _sessions_loaded = Signal(list)  # sessions data
+    _session_messages_loaded = Signal(str, list)  # session_id, messages
 
     def __init__(self, services: dict, parent: QWidget | None = None):
         super().__init__(parent)
@@ -272,6 +276,10 @@ class ChatPage(QWidget):
         self._session_list.new_session_requested.connect(self._new_conversation)
         self._session_list.session_deleted.connect(self._on_session_deleted)
 
+        # Internal signals for thread-safe UI updates
+        self._sessions_loaded.connect(self._on_sessions_loaded)
+        self._session_messages_loaded.connect(self._on_session_messages_loaded)
+
     # ===== History / Persistence =====
 
     def _load_conversations(self) -> None:
@@ -279,17 +287,25 @@ class ChatPage(QWidget):
         async def load_sessions() -> None:
             try:
                 sessions = await self._sombra.get_sessions(limit=50)
-                self._session_list.set_sessions(sessions)
-
-                # Load most recent session if exists
-                if sessions:
-                    await self._load_session(sessions[0].get("id", ""))
+                # Emit signal to update UI in main thread
+                self._sessions_loaded.emit(sessions)
             except Exception as e:
                 print(f"Failed to load sessions: {e}")
 
         from ...core.async_bridge import get_async_bridge
         bridge = get_async_bridge()
         bridge.run_coroutine(load_sessions())
+
+    @Slot(list)
+    def _on_sessions_loaded(self, sessions: list[dict]) -> None:
+        """Handle sessions loaded from API (runs in main thread)."""
+        self._session_list.set_sessions(sessions)
+
+        # Load most recent session if exists
+        if sessions:
+            session_id = sessions[0].get("id", "")
+            if session_id:
+                self._on_session_selected(session_id)
 
     async def _load_session(self, session_id: str) -> None:
         """Load a session from API and display its messages."""
@@ -302,24 +318,30 @@ class ChatPage(QWidget):
             session = get_session_manager()
             session.set_session_id(session_id)
 
-            # Clear current UI
-            self._clear_chat_ui()
-
-            # Display messages
-            for msg in messages:
-                role = msg.get("role", "")
-                content = msg.get("content", "")
-
-                bubble = ChatBubble(content, is_user=(role == "user"))
-                # Connect play/stop buttons for Sombra messages
-                if role == "assistant":
-                    bubble.play_requested.connect(self._on_replay_requested)
-                    bubble.play_audio.connect(self._on_play_cached_audio)
-                    bubble.stop_requested.connect(self._on_stop_requested)
-                self._add_message_widget(bubble)
+            # Emit signal to update UI in main thread
+            self._session_messages_loaded.emit(session_id, messages)
 
         except Exception as e:
             print(f"Failed to load session {session_id}: {e}")
+
+    @Slot(str, list)
+    def _on_session_messages_loaded(self, session_id: str, messages: list[dict]) -> None:
+        """Handle session messages loaded from API (runs in main thread)."""
+        # Clear current UI
+        self._clear_chat_ui()
+
+        # Display messages
+        for msg in messages:
+            role = msg.get("role", "")
+            content = msg.get("content", "")
+
+            bubble = ChatBubble(content, is_user=(role == "user"))
+            # Connect play/stop buttons for Sombra messages
+            if role == "assistant":
+                bubble.play_requested.connect(self._on_replay_requested)
+                bubble.play_audio.connect(self._on_play_cached_audio)
+                bubble.stop_requested.connect(self._on_stop_requested)
+            self._add_message_widget(bubble)
 
     def _load_conversation(self, conversation_id: str) -> None:
         """Load a conversation and display its messages."""
