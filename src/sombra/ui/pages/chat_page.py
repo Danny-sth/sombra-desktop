@@ -286,11 +286,13 @@ class ChatPage(QWidget):
         """Load sessions from API."""
         async def load_sessions() -> None:
             try:
+                logger.info("Loading sessions from API...")
                 sessions = await self._sombra.get_sessions(limit=50)
+                logger.info(f"Loaded {len(sessions)} sessions from API")
                 # Emit signal to update UI in main thread
                 self._sessions_loaded.emit(sessions)
             except Exception as e:
-                print(f"Failed to load sessions: {e}")
+                logger.error(f"Failed to load sessions: {e}")
 
         from ...core.async_bridge import get_async_bridge
         bridge = get_async_bridge()
@@ -299,13 +301,17 @@ class ChatPage(QWidget):
     @Slot(list)
     def _on_sessions_loaded(self, sessions: list[dict]) -> None:
         """Handle sessions loaded from API (runs in main thread)."""
+        logger.info(f"UI: Displaying {len(sessions)} sessions in sidebar")
         self._session_list.set_sessions(sessions)
 
         # Load most recent session if exists
         if sessions:
             session_id = sessions[0].get("id", "")
             if session_id:
+                logger.info(f"Auto-loading most recent session: {session_id}")
                 self._on_session_selected(session_id)
+        else:
+            logger.warning("No sessions found in response")
 
     async def _load_session(self, session_id: str) -> None:
         """Load a session from API and display its messages."""
