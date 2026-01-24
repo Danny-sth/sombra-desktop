@@ -440,6 +440,9 @@ del "%~f0"
         # Find venv activate path
         venv_activate = project_dir / ".venv" / "bin" / "activate"
 
+        # Pass target version to prevent infinite loop
+        target_version = self._latest_version or "unknown"
+
         script = f'''#!/bin/bash
 echo ""
 echo "=============================="
@@ -452,13 +455,30 @@ sleep 2
 
 cd "{project_dir}"
 
-echo "[1/3] Pulling updates from GitHub..."
+echo "[1/4] Checking version..."
+CURRENT_VERSION=$(grep -oP '__version__ = "\\K[^"]+' src/sombra/__init__.py 2>/dev/null || echo "0.0.0")
+TARGET_VERSION="{target_version}"
+
+echo "Current: $CURRENT_VERSION"
+echo "Target:  $TARGET_VERSION"
+
+if [ "$CURRENT_VERSION" = "$TARGET_VERSION" ]; then
+    echo "Already on target version. Restarting..."
+    if [ -f "{venv_activate}" ]; then
+        source "{venv_activate}"
+    fi
+    nohup python -m sombra > /dev/null 2>&1 &
+    rm "$0"
+    exit 0
+fi
+
+echo "[2/4] Pulling updates from GitHub..."
 git fetch origin
 git reset --hard origin/master
 echo "Done."
 
 echo ""
-echo "[2/3] Updating dependencies..."
+echo "[3/4] Updating dependencies..."
 if [ -f "{venv_activate}" ]; then
     source "{venv_activate}"
 fi
@@ -466,7 +486,7 @@ pip install -e . -q 2>/dev/null || pip install -e .
 echo "Done."
 
 echo ""
-echo "[3/3] Restarting Sombra..."
+echo "[4/4] Restarting Sombra..."
 cd "{project_dir}"
 if [ -f "{venv_activate}" ]; then
     source "{venv_activate}"
